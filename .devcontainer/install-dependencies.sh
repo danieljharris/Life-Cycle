@@ -8,5 +8,5 @@ curl -L https://github.com/bazelbuild/buildtools/releases/download/v8.2.1/buildi
 chmod +x /usr/local/bin/buildifier
 
 # setup server
-chmod +x ./setup_server.sh && \
- ./setup_server.sh
+chmod +x ./.devcontainer/setup_server.sh && \
+ ./.devcontainer/setup_server.sh

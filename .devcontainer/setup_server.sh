@@ -21,31 +21,35 @@ touch "$LOCK"
 echo "Setting up deployment environment..."
 
 # Create working server directory
-mkdir /home/server
+mkdir /workspace/server
 
 # Download the Hytale server for the development environment
 
 # if /{workspace}/.local-assets/ contains `Assets.zip`, ignore download and copy from there
-if [ -f /workspace/.local-assets/Assets.zip ]; then
+if [ -f /workspace/server/Assets.zip ]; then
+    echo "Assets.zip already exists in /workspace/server, skipping download..."
+elif [ -f /workspace/.local-assets/Assets.zip ]; then
     echo "Using local Assets.zip for server setup..."
-    cp /workspace/.local-assets/Assets.zip /home/server/Assets.zip
+    cp /workspace/.local-assets/Assets.zip /workspace/server/Assets.zip
 else
     echo "Downloading Assets.zip for server setup..."
-    wget -P /home/server https://artifacts.yakovliam.com/Assets.zip
+    wget -P /workspace/server https://artifacts.yakovliam.com/Assets.zip
 fi
 
 # if /{workspace}/.local-assets/ contains `HytaleServer.jar`, ignore download and copy from there
-if [ -f /workspace/.local-assets/HytaleServer.jar ]; then
+if [ -f /workspace/server/HytaleServer.jar ]; then
+    echo "HytaleServer.jar already exists in /workspace/server, skipping download..."
+elif [ -f /workspace/.local-assets/HytaleServer.jar ]; then
     echo "Using local HytaleServer.jar for server setup..."
-    cp /workspace/.local-assets/HytaleServer.jar /home/server/HytaleServer.jar
+    cp /workspace/.local-assets/HytaleServer.jar /workspace/server/HytaleServer.jar
 else
     echo "Downloading HytaleServer.jar for server setup..."
-    wget -P /home/server https://artifacts.yakovliam.com/HytaleServer.jar
+    wget -P /workspace/server https://artifacts.yakovliam.com/HytaleServer.jar
 fi
 
 # Copy start_server.sh to working server directory
-cp /workspace/.devcontainer/start_server.sh /home/server/start_server.sh
-chmod +x /home/server/start_server.sh
+cp /workspace/.devcontainer/start_server.sh /workspace/server/start_server.sh
+chmod +x /workspace/server/start_server.sh
 
 echo "Deployment setup complete!"
 

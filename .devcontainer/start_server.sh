@@ -3,9 +3,11 @@
 # Configuration
 CLIENT_ID="hytale-server"
 SCOPES="openid offline auth:server"
-AUTH_FILE="hytale_auth_data.json"
-SERVER_JAR="HytaleServer.jar"
-SERVER_ARGS="--assets Assets.zip --bind 0.0.0.0:5520"
+SERVER_DIR="/workspace/server"
+AUTH_FILE="$SERVER_DIR/hytale_auth_data.json"
+SERVER_JAR="$SERVER_DIR/HytaleServer.jar"
+ASSETS_ZIP="$SERVER_DIR/Assets.zip"
+SERVER_ARGS="--assets $ASSETS_ZIP --bind 0.0.0.0:5520 --allow-op"
 
 URL_DEVICE_AUTH="https://oauth.accounts.hytale.com/oauth2/device/auth"
 URL_TOKEN="https://oauth.accounts.hytale.com/oauth2/token"
@@ -141,6 +143,8 @@ IDENTITY_TOKEN=$(echo "$SESSION_RES" | jq -r '.identityToken')
 if [ "$SESSION_TOKEN" == "null" ]; then
     error_exit "Failed to create game session. Response: $SESSION_RES"
 fi
+
+cd "/workspace/server"
 
 echo "--- Starting Hytale Server ---"
 java -jar "$SERVER_JAR" \

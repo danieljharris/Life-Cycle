@@ -32,8 +32,15 @@ DIST_FILE="$EXECROOT/$OUTPUT_REL"
 
 if [ -n "$DIST_FILE" ]; then
     echo "Moving $DIST_FILE to server mods..."
-    mkdir -p /home/server/mods
-    cp "$DIST_FILE" /home/server/mods/
+    mkdir -p /workspace/server/mods
+    
+    # Remove existing jar files to avoid permission issues
+    rm -f /workspace/server/mods/*.jar
+    
+    cp "$DIST_FILE" /workspace/server/mods/
+    
+    # Set proper permissions on the copied file
+    chmod 644 /workspace/server/mods/*.jar
 else
     echo "Error: Could not locate distribution file."
     exit 1
