@@ -61,6 +61,21 @@ Connect your Hytale client to the **first IP address** returned (typically the c
 
 Example: If `hostname -I` returns `172.17.0.2 172.18.0.1`, connect to `172.17.0.2:5520`
 
+## Iterative Development
+Once the server is running, you can iterate quickly on your plugin:
+
+1. Make changes to your plugin code in `plugin/src/`
+2. Deploy the updated plugin:
+```bash
+./deploy.sh
+```
+3. In-game, reload your plugin:
+```
+/plugin reload com.example:ExamplePlugin
+```
+
+The server will reload your updated plugin without needing a full restart.
+
 ## Notes
 - Offline: place Assets.zip and HytaleServer.jar in .local-assets before container creation.
 - Adjust deploy.sh if your dist target or copy path differs.
