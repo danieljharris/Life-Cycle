@@ -2,7 +2,6 @@ package DrDan.AnimalsGrow.command;
 
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
-import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -11,11 +10,6 @@ import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.RemoveReason;
-import com.hypixel.hytale.server.npc.NPCPlugin;
-import com.hypixel.hytale.server.npc.entities.NPCEntity;
-
-import java.util.List;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
 import DrDan.AnimalsGrow.AnimalsGrowAction;

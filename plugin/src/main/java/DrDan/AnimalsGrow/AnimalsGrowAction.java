@@ -11,6 +11,7 @@ import com.hypixel.hytale.server.npc.entities.NPCEntity;
 
 import java.util.List;
 
+import DrDan.AnimalsGrow.annotation.ReturnIfNull;
 import DrDan.AnimalsGrow.config.GrowthEntry;
 
 public final class AnimalsGrowAction {
@@ -33,16 +34,13 @@ public final class AnimalsGrowAction {
     }
 
     public final void Grow(Ref<EntityStore> ref, Store<EntityStore> store, CommandBuffer<EntityStore> commandBuffer) {
-        NPCEntity npcEntity = store.getComponent(ref, NPCEntity.getComponentType());
-        if (npcEntity == null) { return; }
-
-        String npcName = npcEntity.getRoleName();
-        if (npcName == null) { return; }
+        @ReturnIfNull NPCEntity npcEntity = store.getComponent(ref, NPCEntity.getComponentType());
+        @ReturnIfNull String npcName = npcEntity.getRoleName();
 
         // Check if the entity model matches any growth entry's babies
         for (GrowthEntry growthEntry : config) {
             if (npcName.equals(growthEntry.getBaby())) {
-                TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
+                @ReturnIfNull TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
                 commandBuffer.removeEntity(ref, RemoveReason.REMOVE);
                 NPCPlugin.get().spawnNPC(store, growthEntry.getAdult(), null, transform.getPosition(), transform.getRotation());
                 break;
