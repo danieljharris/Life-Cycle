@@ -37,9 +37,6 @@ class AnimalsGrowCommand : AbstractPlayerCommand {
         playerRef: PlayerRef,
         world: World
     ) {
-        // Ensure world is set in AnimalsGrowAction
-        AnimalsGrowAction.setWorld(world)
-        
         val growthConfig = AnimalsGrowAction.getConfig()
         val spawnsToQueue = mutableListOf<SpawnOperation>()
         

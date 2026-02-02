@@ -1,7 +1,6 @@
 package DrDan.AnimalsGrow.grow_ecs
 
 import com.hypixel.hytale.component.Component
-import com.hypixel.hytale.component.ComponentType
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 
 class AnimalsGrowComponent : Component<EntityStore> {
@@ -29,22 +28,4 @@ class AnimalsGrowComponent : Component<EntityStore> {
     fun resetElapsedTime() { this.elapsedTime = 0f }
     fun decrementRemainingTicks() { this.remainingTicks-- }
     fun isExpired(): Boolean = this.remainingTicks <= 0
-
-    companion object {
-        @Volatile
-        private var componentType: ComponentType<EntityStore, AnimalsGrowComponent>? = null
-
-        @JvmStatic
-        fun getComponentType(): ComponentType<EntityStore, AnimalsGrowComponent> {
-            return componentType ?: throw IllegalStateException(
-                "AnimalsGrowComponent.componentType not initialized. " +
-                "This should be set by the framework when the component is registered."
-            )
-        }
-
-        @JvmStatic
-        fun setComponentType(type: ComponentType<EntityStore, AnimalsGrowComponent>) {
-            componentType = type
-        }
-    }
 }

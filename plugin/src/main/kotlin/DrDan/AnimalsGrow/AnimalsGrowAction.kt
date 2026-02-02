@@ -3,7 +3,6 @@ package DrDan.AnimalsGrow
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
 import com.hypixel.hytale.server.npc.NPCPlugin
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
-import com.hypixel.hytale.server.core.universe.world.World
 import com.hypixel.hytale.server.core.universe.Universe
 import com.hypixel.hytale.component.CommandBuffer
 import com.hypixel.hytale.component.ComponentType
@@ -11,18 +10,12 @@ import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.component.RemoveReason
 import com.hypixel.hytale.server.npc.entities.NPCEntity
-import com.hypixel.hytale.math.vector.Vector3d
-import com.hypixel.hytale.math.vector.Vector3f
 import DrDan.AnimalsGrow.config.GrowthEntry
-import DrDan.AnimalsGrow.grow_ecs.GrowthSpawn
 
 object AnimalsGrowAction {
     private lateinit var config: List<GrowthEntry>
-    private var world: World? = null
     
     fun initialize(growthConfig: List<GrowthEntry>) { config = growthConfig }
-    
-    fun setWorld(w: World) { world = w }
     
     fun getConfig(): List<GrowthEntry> = config
 
@@ -48,15 +41,16 @@ object AnimalsGrowAction {
             // Remove the baby entity
             commandBuffer.removeEntity(ref, RemoveReason.REMOVE)
             
-            // Get world from cache or fall back to Universe default
-            val w = world ?: Universe.get().defaultWorld
-            if (w != null) {
-                w.execute {
+            // Spawn on world thread for thread safety
+            val world = Universe.get().defaultWorld
+            if (world != null) {
+                world.execute {
                     NPCPlugin.get().spawnNPC(store, adultName, null, transform.position, transform.rotation)
                 }
             } else {
-                println("ERROR: Could not get world from cache or Universe!")
+                println("ERROR: Could not get default world from Universe!")
             }
+
             break
         }
     }

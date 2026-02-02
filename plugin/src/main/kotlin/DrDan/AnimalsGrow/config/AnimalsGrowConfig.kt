@@ -17,8 +17,23 @@ class AnimalsGrowConfig {
     var growsUpInto: MutableList<GrowthEntry> = ArrayList()
 
     constructor() {
-        growsUpInto.add(GrowthEntry("Lamb", "Sheep", 5))
-        growsUpInto.add(GrowthEntry("Piglet", "Pig", 5))
+        growsUpInto.add(GrowthEntry("Lamb"                , "Sheep"         , 10))
+        growsUpInto.add(GrowthEntry("Piglet"              , "Pig"           , 10))
+        growsUpInto.add(GrowthEntry("Bison_Calf"          , "Bison"         , 10))
+        growsUpInto.add(GrowthEntry("Boar_Piglet"         , "Boar"          , 10))
+        growsUpInto.add(GrowthEntry("Camel_Calf"          , "Camel"         , 10))
+        growsUpInto.add(GrowthEntry("Chicken_Desert_Chick", "Chicken_Desert", 10))
+        growsUpInto.add(GrowthEntry("Chicken_Chick"       , "Chicken"       , 10))
+        growsUpInto.add(GrowthEntry("Cow_Calf"            , "Cow"           , 10))
+        growsUpInto.add(GrowthEntry("Goat_Kid"            , "Goat"          , 10))
+        growsUpInto.add(GrowthEntry("Horse_Foal"          , "Horse"         , 10))
+        growsUpInto.add(GrowthEntry("Mouflon_Lamb"        , "Mouflon"       , 10))
+        growsUpInto.add(GrowthEntry("Pig_Wild_Piglet"     , "Pig_Wild"      , 10))
+        growsUpInto.add(GrowthEntry("Bunny"               , "Rabbit"        , 10))
+        growsUpInto.add(GrowthEntry("Ram_Lamb"            , "Ram"           , 10))
+        growsUpInto.add(GrowthEntry("Skrill_Chick"        , "Skrill"        , 10))
+        growsUpInto.add(GrowthEntry("Turkey_Chick"        , "Turkey"        , 10))
+        growsUpInto.add(GrowthEntry("Warthog_Piglet"      , "Warthog"       , 10))
     }
 
     private class ListCodec : Codec<MutableList<GrowthEntry>> {

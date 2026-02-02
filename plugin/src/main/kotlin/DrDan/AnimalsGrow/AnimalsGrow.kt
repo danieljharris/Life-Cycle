@@ -1,7 +1,9 @@
 package DrDan.AnimalsGrow
 
+import com.hypixel.hytale.component.ComponentType
 import com.hypixel.hytale.server.core.plugin.JavaPlugin
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.core.util.Config
 import org.slf4j.LoggerFactory
 import DrDan.AnimalsGrow.command.AnimalsGrowCommand
@@ -16,6 +18,18 @@ class AnimalsGrow(init: JavaPluginInit) : JavaPlugin(init) {
     private val logger = LoggerFactory.getLogger(AnimalsGrow::class.java)
     private val config: Config<AnimalsGrowConfig> = this.withConfig(PLUGIN_NAME, AnimalsGrowConfig.CODEC)
 
+    companion object {
+        @Volatile
+        private var componentType: ComponentType<EntityStore, AnimalsGrowComponent>? = null
+
+        @JvmStatic
+        fun getComponentType(): ComponentType<EntityStore, AnimalsGrowComponent> {
+            return componentType ?: throw IllegalStateException(
+                "AnimalsGrowComponent not registered. Plugin not started yet."
+            )
+        }
+    }
+
     override fun setup() {
         logger.info("Registering $PLUGIN_NAME!")
         config.save()
@@ -26,19 +40,17 @@ class AnimalsGrow(init: JavaPluginInit) : JavaPlugin(init) {
         
         val growthConfig = config.get().growsUpInto
         AnimalsGrowAction.initialize(growthConfig)
-        // TODO: Get actual world, for now using hack to access from server context
-        // The world will be set when the system ticks with a Store<EntityStore> instance
+        
+        // Register AnimalsGrowComponent
+        componentType = entityStoreRegistry.registerComponent(
+            AnimalsGrowComponent::class.java
+        ) { AnimalsGrowComponent() }
+        
+        // Register systems - they use AnimalsGrow.getComponentType()
+        entityStoreRegistry.registerSystem(AnimalsGrowEvent(growthConfig))
+        entityStoreRegistry.registerSystem(AnimalsGrowSystem())
+
+        // Register commands
         commandRegistry.registerCommand(AnimalsGrowCommand())
-        
-        // Register AnimalsGrowComponent and get its type
-        val animalsGrowComponentType = entityStoreRegistry.registerComponent(
-            AnimalsGrowComponent::class.java,
-            java.util.function.Supplier { AnimalsGrowComponent() }
-        )
-        AnimalsGrowComponent.setComponentType(animalsGrowComponentType)
-        
-        // Register systems with the component type
-        entityStoreRegistry.registerSystem(AnimalsGrowEvent(growthConfig, animalsGrowComponentType))
-        entityStoreRegistry.registerSystem(AnimalsGrowSystem(animalsGrowComponentType))
     }
 }
