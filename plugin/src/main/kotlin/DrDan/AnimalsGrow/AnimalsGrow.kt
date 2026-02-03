@@ -19,6 +19,10 @@ class AnimalsGrow(init: JavaPluginInit) : JavaPlugin(init) {
     private val config: Config<AnimalsGrowConfig> = this.withConfig(PLUGIN_NAME, AnimalsGrowConfig.CODEC)
 
     companion object {
+        /** Global debug flag for verbose logging */
+        @JvmStatic
+        var DEBUG = false
+        
         @Volatile
         private var componentType: ComponentType<EntityStore, AnimalsGrowComponent>? = null
 

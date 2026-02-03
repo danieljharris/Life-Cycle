@@ -8,6 +8,7 @@ import com.hypixel.hytale.component.RemoveReason
 import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.component.query.Query
 import com.hypixel.hytale.component.system.RefSystem
+import com.hypixel.hytale.server.core.modules.time.WorldTimeResource
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.npc.entities.NPCEntity
 import DrDan.AnimalsGrow.AnimalsGrow
@@ -15,6 +16,14 @@ import DrDan.AnimalsGrow.AnimalsGrowAction
 import DrDan.AnimalsGrow.config.GrowthEntry
 import DrDan.AnimalsGrow.grow_ecs.AnimalsGrowComponent
 
+/**
+ * System that adds AnimalsGrowComponent to baby animals when they spawn.
+ * 
+ * The component is initialized with the current in-game time, so growth
+ * is based on in-game time elapsed (not real time). This means:
+ * - When players sleep, in-game time advances faster
+ * - Animals will grow faster when players sleep (like crops)
+ */
 class AnimalsGrowEvent(
     private val config: List<GrowthEntry>
 ) : RefSystem<EntityStore>() {
@@ -39,12 +48,20 @@ class AnimalsGrowEvent(
         for (growthEntry in config) {
             if (growthEntry.baby == null || npcName != growthEntry.baby) continue
 
-            val seconds = growthEntry.timeToGrowUpSeconds ?: continue
-            val tickInterval = 1.0f
-            val totalTicks = (seconds / tickInterval).toInt()
+            val growthSeconds = growthEntry.timeToGrowUpSeconds ?: continue
             
-            val animalsGrowComponent = AnimalsGrowComponent(tickInterval, totalTicks)
+            // Get current in-game time to record spawn time
+            val worldTimeResource = store.getResource(WorldTimeResource.getResourceType())
+            val spawnTime = worldTimeResource?.gameTime ?: java.time.Instant.now()
+            
+            // Create component with in-game spawn time and growth duration
+            val animalsGrowComponent = AnimalsGrowComponent(
+                spawnTime = spawnTime,
+                growthDurationSeconds = growthSeconds.toLong()
+            )
+            
             commandBuffer.addComponent(ref, AnimalsGrow.getComponentType(), animalsGrowComponent)
+            println("AnimalsGrowEvent: Added growth component to $npcName, will grow in ${growthSeconds}s (in-game time)")
             break
         }
     }
