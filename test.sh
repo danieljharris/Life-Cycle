@@ -90,7 +90,7 @@ while true; do
     
     # Read new log lines
     NEW_LINES=$(tail -n +$((LOG_LINES_BEFORE + 1)) "$LATEST_LOG" 2>/dev/null)
-    
+
     # Check for test start
     if echo "$NEW_LINES" | grep -q "\[AG_TEST:START\]"; then
         if [ "$TEST_STARTED" = false ]; then
@@ -98,8 +98,8 @@ while true; do
             echo "Tests started..."
         fi
     fi
-    
-    # Check for individual test results
+
+    # Check for individual test results and commands
     while IFS= read -r line; do
         if echo "$line" | grep -q "\[AG_TEST:.*:PASS\]"; then
             TEST_NAME=$(echo "$line" | sed -n 's/.*\[AG_TEST:\([^:]*\):PASS\].*/\1/p')
@@ -108,20 +108,26 @@ while true; do
             TEST_NAME=$(echo "$line" | sed -n 's/.*\[AG_TEST:\([^:]*\):FAIL:.*/\1/p')
             REASON=$(echo "$line" | sed -n 's/.*\[AG_TEST:[^:]*:FAIL:\([^]]*\)\].*/\1/p')
             echo -e "  ${RED}✗ FAIL${NC}: $TEST_NAME - $REASON"
+        elif echo "$line" | grep -q "\[AG_TEST:COMMAND:"; then
+            # Extract command and send to server FIFO
+            COMMAND=$(echo "$line" | sed -n 's/.*\[AG_TEST:COMMAND:\([^]]*\)\].*/\1/p')
+            if [ -n "$COMMAND" ] && [ -p "$COMMAND_FIFO" ]; then
+                echo "$COMMAND" > "$COMMAND_FIFO"
+                echo -e "  ${YELLOW}↪ Sent command to server:${NC} $COMMAND"
+            fi
         fi
     done <<< "$NEW_LINES"
-    
+
     # Check for test end
     if echo "$NEW_LINES" | grep -q "\[AG_TEST:END:"; then
         RESULT=$(echo "$NEW_LINES" | grep -o "\[AG_TEST:END:[^]]*\]" | tail -1)
         PASSED=$(echo "$RESULT" | sed -n 's/.*\[AG_TEST:END:\([0-9]*\)\/.*/\1/p')
-        TOTAL=$(echo "$RESULT" | sed -n 's/.*\[AG_TEST:END:[0-9]*\/\([0-9]*\)\].*/\1/p')
+        TOTAL=$(echo "$RESULT" | sed -n 's/.*\[AG_TEST:END:[0-9]*\/[0-9]*\)\].*/\1/p')
         TEST_ENDED=true
         break
     fi
-    
+
     sleep 0.5
-done
 
 echo ""
 echo "================================"
