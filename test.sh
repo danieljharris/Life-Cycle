@@ -76,8 +76,6 @@ echo ""
 START_TIME=$(date +%s)
 TEST_STARTED=false
 TEST_ENDED=false
-PASSED=0
-TOTAL=0
 
 while true; do
     CURRENT_TIME=$(date +%s)
@@ -85,9 +83,6 @@ while true; do
     
     if [ $ELAPSED -ge $TIMEOUT ]; then
         echo -e "${RED}Timeout waiting for test results!${NC}"
-        exit 1
-    fi
-    
     # Read new log lines
     NEW_LINES=$(tail -n +$((LOG_LINES_BEFORE + 1)) "$LATEST_LOG" 2>/dev/null)
 
@@ -100,7 +95,8 @@ while true; do
     fi
 
     # Check for individual test results and commands
-    while IFS= read -r line; do
+    IFS=$'\n'
+    for line in $NEW_LINES; do
         if echo "$line" | grep -q "\[AG_TEST:.*:PASS\]"; then
             TEST_NAME=$(echo "$line" | sed -n 's/.*\[AG_TEST:\([^:]*\):PASS\].*/\1/p')
             echo -e "  ${GREEN}✓ PASS${NC}: $TEST_NAME"
@@ -116,7 +112,7 @@ while true; do
                 echo -e "  ${YELLOW}↪ Sent command to server:${NC} $COMMAND"
             fi
         fi
-    done <<< "$NEW_LINES"
+    done
 
     # Check for test end
     if echo "$NEW_LINES" | grep -q "\[AG_TEST:END:"; then
@@ -128,6 +124,8 @@ while true; do
     fi
 
     sleep 0.5
+done
+
 
 echo ""
 echo "================================"
@@ -139,3 +137,4 @@ else
     echo -e "${RED}$FAILED test(s) failed ($PASSED/$TOTAL passed)${NC}"
     exit 1
 fi
+
