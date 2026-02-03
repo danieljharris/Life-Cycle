@@ -2,6 +2,8 @@ package DrDan.AnimalsGrow.test
 
 import com.hypixel.hytale.server.core.universe.world.World
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
+import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.component.ComponentType
@@ -73,15 +75,18 @@ object TestRunner {
     }
     
     private fun cleanupTestEntities(store: Store<EntityStore>) {
-        // Find and remove entities with "Test_" prefix in their name
-        val npcComponentType = NPCEntity.getComponentType() as? ComponentType<EntityStore, NPCEntity> ?: return
-        
+        // Find and remove entities with "Test_Bunny" DisplayNameComponent
+        val displayNameType = DisplayNameComponent.getComponentType() as? ComponentType<EntityStore, DisplayNameComponent> ?: return
         store.forEachChunk(java.util.function.BiConsumer { chunk: ArchetypeChunk<EntityStore>, commandBuffer: CommandBuffer<EntityStore> ->
             for (i in 0 until chunk.size()) {
                 val ref = chunk.getReferenceTo(i)
-                val npc = store.getComponent(ref, npcComponentType) ?: continue
-                val name = npc.roleName ?: continue
-                // We'll use "Bunny" for tests - could add a test marker system later
+                val displayNameComponent = store.getComponent(ref, displayNameType)
+                if (displayNameComponent != null) {
+                    val displayName = displayNameComponent.displayName?.rawText ?: ""
+                    if (displayName == "Test_Bunny") {
+                        commandBuffer.removeEntity(ref)
+                    }
+                }
             }
         })
     }
@@ -113,6 +118,13 @@ class SpawnBabyTest : TestCase("SpawnBaby") {
         val ref = spawnResult.first()
         if (ref == null) {
             return TestResult(false, "spawnNPC ref is null")
+        }
+
+        // Set name to Test_ for identification
+        val displayNameType = DisplayNameComponent.getComponentType() as? ComponentType<EntityStore, DisplayNameComponent>
+        if (displayNameType != null) {
+                val message = Message.raw("Test_Bunny")
+                store.replaceComponent(ref, displayNameType, DisplayNameComponent(message))
         }
         
         // Verify the NPC exists
