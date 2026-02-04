@@ -51,7 +51,7 @@ object AnimalsGrowAction {
             val adultName = growthEntry.adult ?: continue
 
             val transformComponentType = TransformComponent.getComponentType() as? ComponentType<EntityStore, TransformComponent> ?: return
-            val transform = store.getComponent(ref, transformComponentType) ?: return
+            val transform: TransformComponent = store.getComponent(ref, transformComponentType) ?: return
             
             // Capture properties to transfer BEFORE removing the baby
             val transfer = captureTransferProperties(ref, store)
@@ -167,20 +167,8 @@ object AnimalsGrowAction {
         
         // Apply custom display name
         if (transfer.displayName != null) {
-            val displayNameType = DisplayNameComponent.getComponentType() as? ComponentType<EntityStore, DisplayNameComponent>
-            if (displayNameType != null) {
-                // Create new DisplayNameComponent with the transferred name
-                val newDisplayName = DisplayNameComponent(transfer.displayName)
-                // Note: We need to add or replace the component - this depends on whether adult already has one
-                val existingDisplayName = store.getComponent(adultRef, displayNameType)
-                if (existingDisplayName != null) {
-                    // Component exists, we may need to use a different approach to update it
-                    // For now, log that we captured it
-                    println("  Adult already has display name, keeping original")
-                } else {
-                    println("  Applied display name: ${transfer.displayName.rawText}")
-                }
-            }
+            // TODO: Maybe only do this when transfer name begins with "Test_"
+            store.replaceComponent(adultRef, DisplayNameComponent.getComponentType(), DisplayNameComponent(transfer.displayName))
         }
         
         // Apply active effects

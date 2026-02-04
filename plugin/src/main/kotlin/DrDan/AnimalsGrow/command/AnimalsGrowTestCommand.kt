@@ -33,10 +33,7 @@ class AnimalsGrowTestCommand : AbstractWorldCommand {
         println("=== AnimalsGrow Test Suite ===")
         println("Test spawn position: $spawnPosition")
         
-        // Run tests on world thread for safety
-        world.execute {
-            TestRunner.runAllTests(world, store, spawnPosition)
-        }
+        TestRunner.runAllTests(world, store, spawnPosition)
     }
 
     companion object {
