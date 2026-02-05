@@ -81,6 +81,9 @@ Swap out "DefaultEntityStatTypes|EntityStatTypes"
 ```bash
 find . -type f -name "*.jar" -print0 | xargs -0 -n1 sh -c 'jar tf "$0" 2>/dev/null | rg "DefaultEntityStatTypes|EntityStatTypes" -n --no-line-number && echo "-- in: $0"'
 ```
+```
+jar tf /workspace/.local-assets/HytaleServer.jar | rg "ModelAsset"
+```
 
 ## Notes
 - Offline: place Assets.zip and HytaleServer.jar in .local-assets before container creation.
