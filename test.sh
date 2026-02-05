@@ -28,8 +28,22 @@ LOG_DIR="$SERVER_DIR/logs"
 echo -e "${YELLOW}=== AnimalsGrow Test Runner ===${NC}"
 echo ""
 
-# Step 1: Build and deploy
-echo -e "${YELLOW}[1/4] Building and deploying plugin...${NC}"
+# Step 1: Build
+echo -e "${YELLOW}[1/4] Building plugin...${NC}"
+export PIPELINE=dev
+if ! command -v bazel >/dev/null 2>&1; then
+    echo -e "${RED}bazel not found; cannot build. Aborting tests.${NC}"
+    exit 1
+fi
+if ! bazel build //... --//build_flags:pipeline=$PIPELINE; then
+    echo -e "${RED}Build failed! Aborting tests.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Build succeeded${NC}"
+echo ""
+
+# Step 2: Deploy
+echo -e "${YELLOW}[2/4] Deploying plugin...${NC}"
 if ! ./deploy.sh; then
     echo -e "${RED}Deploy failed! Aborting tests.${NC}"
     exit 1

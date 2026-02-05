@@ -12,11 +12,13 @@ import com.hypixel.hytale.component.ArchetypeChunk
 import com.hypixel.hytale.component.CommandBuffer
 import com.hypixel.hytale.server.npc.entities.NPCEntity
 import com.hypixel.hytale.server.core.universe.world.World
+import com.hypixel.hytale.server.core.entity.nameplate.Nameplate
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue
 import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes
+
 
 import DrDan.AnimalsGrow.AnimalsGrow
 import DrDan.AnimalsGrow.grow_ecs.AnimalsGrowComponent
@@ -62,21 +64,6 @@ object TestRunner {
             }
         }.start()
     }
-    
-    @JvmStatic
-    fun cleanupTestEntities(store: Store<EntityStore>, name: String) {
-        println("Cleaning up test entities with name: $name")
-        store.forEachChunk(BiConsumer { chunk: ArchetypeChunk<EntityStore>, commandBuffer: CommandBuffer<EntityStore> ->
-            for (i in 0 until chunk.size()) {
-                val ref = chunk.getReferenceTo(i)
-                val nameComponent: DisplayNameComponent = store.getComponent(ref, DisplayNameComponent.getComponentType()) ?: continue
-                val displayName = nameComponent.displayName?.rawText ?: continue
-                if (displayName == name) {
-                    commandBuffer.removeEntity(ref, RemoveReason.REMOVE)
-                }
-            }
-        })
-    }
 }
 
 abstract class TestCase(val name: String) {
@@ -91,51 +78,91 @@ abstract class TestCase(val name: String) {
             println("[AG_TEST:END:${name}:FAIL:$reason]")
         }
     }
+    fun spawn(world: World, store: Store<EntityStore>, spawnPos: Vector3d, testNPCName: String): Ref<EntityStore> {
+        var refReturn: Array<Ref<EntityStore>> = arrayOf()
+        val checkLatchSpawn = CountDownLatch(1)
+        world.execute {
+            val spawnResult = NPCPlugin.get().spawnNPC(store, "Bunny", null, spawnPos, Vector3f(0f, 0f, 0f))?: return@execute
+            val ref = spawnResult.first()?: return@execute
+
+            store.addComponent(ref, Nameplate.getComponentType(), Nameplate(testNPCName))
+
+            refReturn = arrayOf(ref)
+            checkLatchSpawn.countDown()
+        }
+        try { checkLatchSpawn.await(5, TimeUnit.SECONDS) } catch (e: InterruptedException) {}
+        return refReturn[0]
+    }
+    fun getSpawned(world: World, store: Store<EntityStore>, testNPCName: String): Ref<EntityStore>? {
+        val resultLatch = CountDownLatch(1)
+        val foundRef = arrayOf<Ref<EntityStore>?>(null)
+        world.execute {
+            store.forEachChunk(BiConsumer { chunk: ArchetypeChunk<EntityStore>, commandBuffer: CommandBuffer<EntityStore> ->
+                if (foundRef[0] != null) return@BiConsumer  // Early exit if already found
+                for (i in 0 until chunk.size()) {
+                    if (foundRef[0] != null) return@BiConsumer  // Early exit if already found
+
+                    val ref = chunk.getReferenceTo(i)
+                    val namePlate: Nameplate = store.getComponent(ref, Nameplate.getComponentType()) ?: continue
+
+                    if (namePlate.getText() == testNPCName) {
+                        foundRef[0] = ref
+                        return@BiConsumer
+                    }
+                }
+            })
+            resultLatch.countDown()
+        }
+        try { resultLatch.await(5, TimeUnit.SECONDS) } catch (e: InterruptedException) {}
+        return foundRef[0]
+    }
+    fun removeEntity(world: World, store: Store<EntityStore>, testNPCName: String) {
+        getSpawned(world, store, testNPCName)?.let { ref ->
+            world.execute {
+                store.removeEntity(ref, RemoveReason.REMOVE)
+            }
+        }
+    }
+    fun removeEntity(world: World, store: Store<EntityStore>, ref: Ref<EntityStore>) {
+        world.execute {
+            store.removeEntity(ref, RemoveReason.REMOVE)
+        }
+    }
 }
 
 class BabyGrowTest : TestCase("BabyGrowTest") {
     override fun run(world: World, store: Store<EntityStore>, playerPosition: Vector3d) {
         start()
         val testNPCName = "Test_BabyGrowTest"
-
         val spawnPos = Vector3d(playerPosition.x + 2, playerPosition.y, playerPosition.z)
-        
-        // Spawn a bunny
-        world.execute {
-            val spawnResult = NPCPlugin.get().spawnNPC(store, "Bunny", null, spawnPos, Vector3f(0f, 0f, 0f))?: return@execute
-            val ref = spawnResult.first()?: return@execute
-            val message = Message.raw(testNPCName)
-            store.replaceComponent(ref, DisplayNameComponent.getComponentType(), DisplayNameComponent(message))
-        }
+        val ref = spawn(world, store, spawnPos, testNPCName)
 
         println("[AG_TEST:COMMAND:time midday]")
         println("[AG_TEST:COMMAND:time midnight]")
         println("[AG_TEST:COMMAND:time midday]")
         Thread.sleep(5000) // sleep for 5 seconds to day night cycle to advance and growth to occur
 
+        val spawnedRef = getSpawned(world, store, testNPCName)
+        if (spawnedRef == null) {
+            println("Reference to NPC changed after growth")
+            result(false, "Reference to NPC changed after growth")
+            removeEntity(world, store, testNPCName)
+            return
+        }
+
         val resultLatch = CountDownLatch(1)
         val found = arrayOf(false) // Use array to allow mutation within inner class
         world.execute {
-            store.forEachChunk(BiConsumer { chunk: ArchetypeChunk<EntityStore>, commandBuffer: CommandBuffer<EntityStore> ->
-                if (found[0]) return@BiConsumer  // Early exit if already found
-                for (i in 0 until chunk.size()) {
-                    if (found[0]) return@BiConsumer  // Early exit if already found
+            val npcComponentType = NPCEntity.getComponentType() as? ComponentType<EntityStore, NPCEntity> ?: return@execute
+            val npcEntity = store.getComponent(spawnedRef, npcComponentType) ?: return@execute
+            val npcName: String = npcEntity.roleName ?: return@execute
 
-                    val entityRef = chunk.getReferenceTo(i)
-                    val name: DisplayNameComponent = store.getComponent(entityRef, DisplayNameComponent.getComponentType()) ?: continue
-                    val displayName = name.displayName?.rawText ?: continue
+            if (npcName == "Rabbit") {
+                println("Found $testNPCName as adult Rabbit!")
+                found[0] = true
+                return@execute
+            }
 
-                    val npcComponentType = NPCEntity.getComponentType() as? ComponentType<EntityStore, NPCEntity> ?: continue
-                    val npcEntity = store.getComponent(entityRef, npcComponentType) ?: continue
-                    val npcName: String = npcEntity.roleName ?: continue
-
-                    if (displayName == testNPCName && npcName == "Rabbit") {
-                        println("Found $testNPCName as adult Rabbit!")
-                        found[0] = true
-                        return@BiConsumer
-                    }
-                }
-            })
             resultLatch.countDown()
         }
         try { resultLatch.await(5, TimeUnit.SECONDS) } catch (e: InterruptedException) {}
@@ -147,7 +174,7 @@ class BabyGrowTest : TestCase("BabyGrowTest") {
             result(false, "Baby did not grow into adult within expected time")
         }
 
-        world.execute { TestRunner.cleanupTestEntities(store, testNPCName) }
+        removeEntity(world, store, spawnedRef)
     }
 }
 
@@ -155,37 +182,18 @@ class BabyHasGrowthComponentTest : TestCase("BabyHasGrowthComponent") {
     override fun run(world: World, store: Store<EntityStore>, playerPosition: Vector3d) {
         start()
         val testNPCName = "Test_BabyHasGrowthComponent"
-
         val spawnPos = Vector3d(playerPosition.x + 2, playerPosition.y, playerPosition.z)
-        
-        // Spawn a bunny
-        world.execute {
-            val spawnResult = NPCPlugin.get().spawnNPC(store, "Bunny", null, spawnPos, Vector3f(0f, 0f, 0f))?: return@execute
-            val ref = spawnResult.first()?: return@execute
-            val message = Message.raw(testNPCName)
-            store.replaceComponent(ref, DisplayNameComponent.getComponentType(), DisplayNameComponent(message))
-        }
+        val ref = spawn(world, store, spawnPos, testNPCName)
 
         Thread.sleep(1000) // Wait for the spawn to process
 
         val hasGrowthComponent = arrayOf(false)
         val checkLatch = CountDownLatch(1)
         world.execute {
-            store.forEachChunk(BiConsumer { chunk: ArchetypeChunk<EntityStore>, commandBuffer: CommandBuffer<EntityStore> ->
-                for (i in 0 until chunk.size()) {
-                    val entityRef = chunk.getReferenceTo(i)
-                    val name: DisplayNameComponent = store.getComponent(entityRef, DisplayNameComponent.getComponentType()) ?: continue
-                    val displayName = name.displayName?.rawText ?: continue
-
-                    if (displayName == testNPCName) {
-                        val growthComponent = store.getComponent(entityRef, AnimalsGrow.getComponentType())
-                        if (growthComponent != null) {
-                            hasGrowthComponent[0] = true
-                        }
-                        break
-                    }
-                }
-            })
+            val growthComponent = store.getComponent(ref, AnimalsGrow.getComponentType())
+            if (growthComponent != null) {
+                hasGrowthComponent[0] = true
+            }
             checkLatch.countDown()
         }
         try { checkLatch.await(5, TimeUnit.SECONDS) } catch (e: InterruptedException) {}
@@ -197,7 +205,7 @@ class BabyHasGrowthComponentTest : TestCase("BabyHasGrowthComponent") {
             result(false, "Spawned baby did not have AnimalsGrowComponent")
         }
 
-        world.execute { TestRunner.cleanupTestEntities(store, testNPCName) }
+        removeEntity(world, store, testNPCName)
     }
 }
 
@@ -205,18 +213,12 @@ class KeepHealthOnGrowTest : TestCase("KeepHealthOnGrowTest") {
     override fun run(world: World, store: Store<EntityStore>, playerPosition: Vector3d) {
         start()
         val testNPCName = "Test_KeepHealthOnGrowTest"
-
         val spawnPos = Vector3d(playerPosition.x + 2, playerPosition.y, playerPosition.z)
+        val ref = spawn(world, store, spawnPos, testNPCName)
 
         val healthBeforeGrow = arrayOf(1.0f)
-        
-        // Spawn a bunny
+        val checkLatchDamage = CountDownLatch(1)
         world.execute {
-            val spawnResult = NPCPlugin.get().spawnNPC(store, "Bunny", null, spawnPos, Vector3f(0f, 0f, 0f))?: return@execute
-            val ref = spawnResult.first()?: return@execute
-            val message = Message.raw(testNPCName)
-            store.replaceComponent(ref, DisplayNameComponent.getComponentType(), DisplayNameComponent(message))
-
             // Damage the bunny to 50% health
             val statMapType = EntityStatMap.getComponentType() as? ComponentType<EntityStore, EntityStatMap>
             if (statMapType != null) {
@@ -229,40 +231,41 @@ class KeepHealthOnGrowTest : TestCase("KeepHealthOnGrowTest") {
                     println("Set bunny health to ${healthBeforeGrow[0]}% before growth")
                 }
             }
+            checkLatchDamage.countDown()
         }
+        try { checkLatchDamage.await(5, TimeUnit.SECONDS) } catch (e: InterruptedException) {}
 
         println("[AG_TEST:COMMAND:time midday]")
         println("[AG_TEST:COMMAND:time midnight]")
         println("[AG_TEST:COMMAND:time midday]")
         Thread.sleep(5000) // sleep for 5 seconds to day night cycle to advance and growth to occur
 
+        val spawnedRef = getSpawned(world, store, testNPCName)
+        if (spawnedRef == null) {
+            println("Reference to NPC changed after growth")
+            result(false, "Reference to NPC changed after growth")
+            removeEntity(world, store, testNPCName)
+            return
+        }
+
         val healthKept = arrayOf(false)
         val checkLatch = CountDownLatch(1)
         world.execute {
-            store.forEachChunk(BiConsumer { chunk: ArchetypeChunk<EntityStore>, commandBuffer: CommandBuffer<EntityStore> ->
-                for (i in 0 until chunk.size()) {
-                    val entityRef = chunk.getReferenceTo(i)
-                    val name: DisplayNameComponent = store.getComponent(entityRef, DisplayNameComponent.getComponentType()) ?: continue
-                    val displayName = name.displayName?.rawText ?: continue
+            val npcComponentType = NPCEntity.getComponentType() as? ComponentType<EntityStore, NPCEntity> ?: return@execute
+            val npcEntity = store.getComponent(spawnedRef, npcComponentType) ?: return@execute
+            val npcName: String = npcEntity.roleName ?: return@execute
 
-                    val npcComponentType = NPCEntity.getComponentType() as? ComponentType<EntityStore, NPCEntity> ?: continue
-                    val npcEntity = store.getComponent(entityRef, npcComponentType) ?: continue
-                    val npcName: String = npcEntity.roleName ?: continue
-
-                    if (displayName == testNPCName && npcName == "Rabbit") {
-                        val statMapType = EntityStatMap.getComponentType() as? ComponentType<EntityStore, EntityStatMap>
-                        if (statMapType != null) {
-                            val statMap = store.getComponent(entityRef, statMapType)
-                            if (statMap != null) {
-                                val healthValue = statMap.get(DefaultEntityStatTypes.getHealth())?.asPercentage() ?: 1.0f
-                                println("Health after growth: ${healthValue}%")
-                                healthKept[0] = healthValue == healthBeforeGrow[0]
-                            }
-                        }
-                        break
+            if (npcName == "Rabbit") {
+                val statMapType = EntityStatMap.getComponentType() as? ComponentType<EntityStore, EntityStatMap>
+                if (statMapType != null) {
+                    val statMap = store.getComponent(spawnedRef, statMapType)
+                    if (statMap != null) {
+                        val healthValue = statMap.get(DefaultEntityStatTypes.getHealth())?.asPercentage() ?: 1.0f
+                        println("Health after growth: ${healthValue}%")
+                        healthKept[0] = healthValue == healthBeforeGrow[0]
                     }
                 }
-            })
+            }
             checkLatch.countDown()
         }
         try { checkLatch.await(5, TimeUnit.SECONDS) } catch (e: InterruptedException) {}
@@ -274,7 +277,7 @@ class KeepHealthOnGrowTest : TestCase("KeepHealthOnGrowTest") {
             result(false, "Grown adult did not keep health percentage from baby")
         }
 
-        world.execute { TestRunner.cleanupTestEntities(store, testNPCName) }
+        removeEntity(world, store, spawnedRef)
     }
 }
 
