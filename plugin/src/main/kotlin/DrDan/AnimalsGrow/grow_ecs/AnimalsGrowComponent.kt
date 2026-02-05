@@ -1,7 +1,11 @@
 package DrDan.AnimalsGrow.grow_ecs
 
+import com.hypixel.hytale.codec.Codec;
+import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.component.Component
+import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
+
 import java.time.Instant
 
 class AnimalsGrowComponent : Component<EntityStore> {
@@ -35,5 +39,22 @@ class AnimalsGrowComponent : Component<EntityStore> {
     fun getRemainingSeconds(currentGameTime: Instant): Long {
         val elapsedSeconds = java.time.Duration.between(spawnTime, currentGameTime).seconds
         return (growthDurationSeconds - elapsedSeconds).coerceAtLeast(0L)
+    }
+
+    // Animation
+    companion object {
+    @JvmStatic
+    var CODEC:BuilderCodec<AnimalsGrowComponent> = BuilderCodec.builder(AnimalsGrowComponent.class, AnimalsGrowComponent::new)
+        .append(
+                new KeyedCodec<String>("Grow", Codec.STRING),
+                (o, v) -> o.animationName = v,
+                (o) -> o.animationName
+        )
+        .add()
+        .build();
+    }
+
+    public String getAnimationName() {
+        return growAnimation;
     }
 }

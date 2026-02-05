@@ -8,6 +8,7 @@ import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.server.core.Message
 import com.hypixel.hytale.server.npc.NPCPlugin
+import com.hypixel.hytale.protocol.AnimationSlot
 import com.hypixel.hytale.component.RemoveReason
 import com.hypixel.hytale.component.CommandBuffer
 import com.hypixel.hytale.component.ComponentType
@@ -68,9 +69,6 @@ object AnimalsGrowAction {
         // Log the transformation
         println("Animal growing: $npcName -> $adultName at ${transform.position}")
         
-        // Remove the baby entity
-        commandBuffer.removeEntity(ref, RemoveReason.REMOVE)
-        
         // Spawn on world thread for thread safety
         val world = Universe.get().defaultWorld
         if (world != null) {
@@ -124,6 +122,11 @@ object AnimalsGrowAction {
 
                 val spawnResult = NPCPlugin.get().spawnNPC(store, adultName, null, spawnPos, transform.rotation)
                 
+                // TODO: figure out how to play annimation
+                npcEntity.playAnimation(ref, AnimationSlot.Action, "Grow")
+
+                commandBuffer.removeEntity(ref, RemoveReason.REMOVE) // Remove the baby entity
+
                 val adultRef = spawnResult?.first()
                 if (adultRef != null) { applyTransferProperties(adultRef, store, transfer) }
             }
