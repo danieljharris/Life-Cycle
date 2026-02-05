@@ -27,9 +27,31 @@ echo "Found log files, starting to follow logs"
 tail -n0 -F "$LOG_DIR"/*.log* 2>/dev/null | while IFS= read -r line; do
   if echo "$line" | grep -q "\[AG_TEST:COMMAND:"; then
     COMMAND=$(echo "$line" | sed -n 's/.*\[AG_TEST:COMMAND:\([^]]*\)\].*/\1/p')
+    # Debug info
+    echo "[commandForwarder] matched line: $line" >&2
+    echo "[commandForwarder] extracted command: '$COMMAND'" >&2
+    if [ -e "$COMMAND_FIFO" ]; then
+      if command -v stat >/dev/null 2>&1; then
+        stat -c 'perms=%A owner=%U group=%G file=%n' "$COMMAND_FIFO" >&2 || true
+      else
+        ls -l "$COMMAND_FIFO" >&2 || true
+      fi
+    else
+      echo "[commandForwarder] FIFO $COMMAND_FIFO missing" >&2
+    fi
+
     if [ -n "$COMMAND" ] && [ -p "$COMMAND_FIFO" ]; then
-      echo "$COMMAND" > "$COMMAND_FIFO"
-      echo "Forwarded command to server: $COMMAND"
+      if command -v timeout >/dev/null 2>&1; then
+        if timeout 2s bash -c "echo \"$COMMAND\" > \"$COMMAND_FIFO\""; then
+          echo "Forwarded command to server: $COMMAND"
+        else
+          echo "[commandForwarder] Failed to write to FIFO (timeout) for command: $COMMAND" >&2
+        fi
+      else
+        # Fallback: background the write so forwarder doesn't block indefinitely
+        (echo "$COMMAND" > "$COMMAND_FIFO") &
+        echo "Forwarded command to server (bg): $COMMAND"
+      fi
     fi
   fi
 done

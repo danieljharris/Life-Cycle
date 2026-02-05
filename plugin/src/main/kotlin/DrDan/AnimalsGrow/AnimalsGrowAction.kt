@@ -1,20 +1,22 @@
 package DrDan.AnimalsGrow
 
-import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
-import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent
-import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap
-import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent
-import com.hypixel.hytale.server.core.entity.effect.ActiveEntityEffect
+import com.hypixel.hytale.component.Ref
+import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.server.core.Message
 import com.hypixel.hytale.server.npc.NPCPlugin
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
-import com.hypixel.hytale.server.core.universe.Universe
+import com.hypixel.hytale.component.RemoveReason
 import com.hypixel.hytale.component.CommandBuffer
 import com.hypixel.hytale.component.ComponentType
-import com.hypixel.hytale.component.Store
-import com.hypixel.hytale.component.Ref
-import com.hypixel.hytale.component.RemoveReason
+import com.hypixel.hytale.server.core.universe.Universe
 import com.hypixel.hytale.server.npc.entities.NPCEntity
+import com.hypixel.hytale.server.core.entity.effect.ActiveEntityEffect
+import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
+import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
+import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent
+import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes
+
 import DrDan.AnimalsGrow.config.GrowthEntry
 
 /**
@@ -29,9 +31,6 @@ data class GrowthTransfer(
 
 object AnimalsGrowAction {
     private lateinit var config: List<GrowthEntry>
-    
-    // Health stat is typically index 0 in Hytale's stat system
-    private const val HEALTH_STAT_ID = "Health"
     
     fun initialize(growthConfig: List<GrowthEntry>) { config = growthConfig }
     
@@ -101,7 +100,7 @@ object AnimalsGrowAction {
         if (statMapType != null) {
             val statMap = store.getComponent(ref, statMapType)
             if (statMap != null) {
-                val healthStat = statMap.get(HEALTH_STAT_ID)
+                val healthStat = statMap.get(DefaultEntityStatTypes.getHealth())
                 if (healthStat != null) {
                     healthPercentage = healthStat.asPercentage()
                     println("  Captured health: ${healthStat.get()}/${healthStat.max} (${(healthPercentage * 100).toInt()}%)")
@@ -155,7 +154,7 @@ object AnimalsGrowAction {
         if (statMapType != null) {
             val statMap = store.getComponent(adultRef, statMapType)
             if (statMap != null) {
-                val healthStat = statMap.get(HEALTH_STAT_ID)
+                val healthStat = statMap.get(DefaultEntityStatTypes.getHealth())
                 if (healthStat != null) {
                     // Calculate the new health value based on percentage of adult's max health
                     val newHealth = healthStat.max * transfer.healthPercentage

@@ -1,28 +1,31 @@
 package DrDan.AnimalsGrow.test
 
-import com.hypixel.hytale.server.core.universe.world.World
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
-import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent
-import com.hypixel.hytale.server.core.Message;
-import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.component.Ref
-import com.hypixel.hytale.component.ComponentType
-import com.hypixel.hytale.component.ArchetypeChunk
-import com.hypixel.hytale.component.CommandBuffer
+import com.hypixel.hytale.component.Store
+import com.hypixel.hytale.server.core.Message
 import com.hypixel.hytale.server.npc.NPCPlugin
-import com.hypixel.hytale.server.npc.entities.NPCEntity
 import com.hypixel.hytale.math.vector.Vector3d
 import com.hypixel.hytale.math.vector.Vector3f
 import com.hypixel.hytale.component.RemoveReason
+import com.hypixel.hytale.component.ComponentType
+import com.hypixel.hytale.component.ArchetypeChunk
+import com.hypixel.hytale.component.CommandBuffer
+import com.hypixel.hytale.server.npc.entities.NPCEntity
+import com.hypixel.hytale.server.core.universe.world.World
+import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
+import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue
+import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent
+import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes
 
 import DrDan.AnimalsGrow.AnimalsGrow
 import DrDan.AnimalsGrow.grow_ecs.AnimalsGrowComponent
 
 import java.time.Instant
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import java.util.function.BiConsumer
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.Executors
+import java.util.concurrent.CountDownLatch
 
 /**
  * Simple in-game test framework for AnimalsGrow plugin.
@@ -38,10 +41,11 @@ import java.util.function.BiConsumer
 object TestRunner {
     private val tests = mutableListOf<TestCase>()
     
+    // Register all tests
     init {
-        // Register all tests
         tests.add(BabyGrowTest())
         tests.add(BabyHasGrowthComponentTest())
+        tests.add(KeepHealthOnGrowTest())
     }
     
     fun runAllTests(world: World, store: Store<EntityStore>, playerPosition: Vector3d) {
@@ -75,11 +79,6 @@ object TestRunner {
     }
 }
 
-data class TestResult(
-    val passed: Boolean,
-    val reason: String = ""
-)
-
 abstract class TestCase(val name: String) {
     abstract fun run(world: World, store: Store<EntityStore>, playerPosition: Vector3d)
     fun start() {
@@ -97,21 +96,14 @@ abstract class TestCase(val name: String) {
 class BabyGrowTest : TestCase("BabyGrowTest") {
     override fun run(world: World, store: Store<EntityStore>, playerPosition: Vector3d) {
         start()
-
         val testNPCName = "Test_BabyGrowTest"
 
         val spawnPos = Vector3d(playerPosition.x + 2, playerPosition.y, playerPosition.z)
         
         // Spawn a bunny
         world.execute {
-            val spawnResult = NPCPlugin.get().spawnNPC(store, "Bunny", null, spawnPos, Vector3f(0f, 0f, 0f))
-                ?: return@execute
-                // ?: return@run TestResult(false, "spawnNPC returned null")
-            
-            val ref = spawnResult.first()
-                ?: return@execute
-                // ?: return@run TestResult(false, "spawnNPC ref is null")
-
+            val spawnResult = NPCPlugin.get().spawnNPC(store, "Bunny", null, spawnPos, Vector3f(0f, 0f, 0f))?: return@execute
+            val ref = spawnResult.first()?: return@execute
             val message = Message.raw(testNPCName)
             store.replaceComponent(ref, DisplayNameComponent.getComponentType(), DisplayNameComponent(message))
         }
@@ -119,9 +111,7 @@ class BabyGrowTest : TestCase("BabyGrowTest") {
         println("[AG_TEST:COMMAND:time midday]")
         println("[AG_TEST:COMMAND:time midnight]")
         println("[AG_TEST:COMMAND:time midday]")
-
         Thread.sleep(5000) // sleep for 5 seconds to day night cycle to advance and growth to occur
-        println("Checking if baby has grown...")
 
         val resultLatch = CountDownLatch(1)
         val found = arrayOf(false) // Use array to allow mutation within inner class
@@ -148,8 +138,6 @@ class BabyGrowTest : TestCase("BabyGrowTest") {
             })
             resultLatch.countDown()
         }
-
-        // Wait for the world thread check to complete (timeout to avoid hanging)
         try { resultLatch.await(5, TimeUnit.SECONDS) } catch (e: InterruptedException) {}
 
         if (found[0]) {
@@ -163,9 +151,6 @@ class BabyGrowTest : TestCase("BabyGrowTest") {
     }
 }
 
-/**
- * Test: Verify spawned baby has AnimalsGrowComponent attached
- */
 class BabyHasGrowthComponentTest : TestCase("BabyHasGrowthComponent") {
     override fun run(world: World, store: Store<EntityStore>, playerPosition: Vector3d) {
         start()
@@ -175,11 +160,8 @@ class BabyHasGrowthComponentTest : TestCase("BabyHasGrowthComponent") {
         
         // Spawn a bunny
         world.execute {
-            val spawnResult = NPCPlugin.get().spawnNPC(store, "Bunny", null, spawnPos, Vector3f(0f, 0f, 0f))
-                ?: return@execute
-            
-            val ref = spawnResult.first() ?: return@execute
-
+            val spawnResult = NPCPlugin.get().spawnNPC(store, "Bunny", null, spawnPos, Vector3f(0f, 0f, 0f))?: return@execute
+            val ref = spawnResult.first()?: return@execute
             val message = Message.raw(testNPCName)
             store.replaceComponent(ref, DisplayNameComponent.getComponentType(), DisplayNameComponent(message))
         }
@@ -188,7 +170,6 @@ class BabyHasGrowthComponentTest : TestCase("BabyHasGrowthComponent") {
 
         val hasGrowthComponent = arrayOf(false)
         val checkLatch = CountDownLatch(1)
-
         world.execute {
             store.forEachChunk(BiConsumer { chunk: ArchetypeChunk<EntityStore>, commandBuffer: CommandBuffer<EntityStore> ->
                 for (i in 0 until chunk.size()) {
@@ -207,7 +188,6 @@ class BabyHasGrowthComponentTest : TestCase("BabyHasGrowthComponent") {
             })
             checkLatch.countDown()
         }
-
         try { checkLatch.await(5, TimeUnit.SECONDS) } catch (e: InterruptedException) {}
 
         if (hasGrowthComponent[0]) {
@@ -220,3 +200,81 @@ class BabyHasGrowthComponentTest : TestCase("BabyHasGrowthComponent") {
         world.execute { TestRunner.cleanupTestEntities(store, testNPCName) }
     }
 }
+
+class KeepHealthOnGrowTest : TestCase("KeepHealthOnGrowTest") {
+    override fun run(world: World, store: Store<EntityStore>, playerPosition: Vector3d) {
+        start()
+        val testNPCName = "Test_KeepHealthOnGrowTest"
+
+        val spawnPos = Vector3d(playerPosition.x + 2, playerPosition.y, playerPosition.z)
+
+        val healthBeforeGrow = arrayOf(1.0f)
+        
+        // Spawn a bunny
+        world.execute {
+            val spawnResult = NPCPlugin.get().spawnNPC(store, "Bunny", null, spawnPos, Vector3f(0f, 0f, 0f))?: return@execute
+            val ref = spawnResult.first()?: return@execute
+            val message = Message.raw(testNPCName)
+            store.replaceComponent(ref, DisplayNameComponent.getComponentType(), DisplayNameComponent(message))
+
+            // Damage the bunny to 50% health
+            val statMapType = EntityStatMap.getComponentType() as? ComponentType<EntityStore, EntityStatMap>
+            if (statMapType != null) {
+                val statMap = store.getComponent(ref, statMapType)
+                if (statMap != null) {
+                    val healthMax = statMap.maximizeStatValue(DefaultEntityStatTypes.getHealth())
+                    val halfHealth = healthMax * 0.5f
+                    statMap.setStatValue(DefaultEntityStatTypes.getHealth(), halfHealth)
+                    healthBeforeGrow[0] = statMap.get(DefaultEntityStatTypes.getHealth())?.asPercentage() ?: 1.0f
+                    println("Set bunny health to ${healthBeforeGrow[0]}% before growth")
+                }
+            }
+        }
+
+        println("[AG_TEST:COMMAND:time midday]")
+        println("[AG_TEST:COMMAND:time midnight]")
+        println("[AG_TEST:COMMAND:time midday]")
+        Thread.sleep(5000) // sleep for 5 seconds to day night cycle to advance and growth to occur
+
+        val healthKept = arrayOf(false)
+        val checkLatch = CountDownLatch(1)
+        world.execute {
+            store.forEachChunk(BiConsumer { chunk: ArchetypeChunk<EntityStore>, commandBuffer: CommandBuffer<EntityStore> ->
+                for (i in 0 until chunk.size()) {
+                    val entityRef = chunk.getReferenceTo(i)
+                    val name: DisplayNameComponent = store.getComponent(entityRef, DisplayNameComponent.getComponentType()) ?: continue
+                    val displayName = name.displayName?.rawText ?: continue
+
+                    val npcComponentType = NPCEntity.getComponentType() as? ComponentType<EntityStore, NPCEntity> ?: continue
+                    val npcEntity = store.getComponent(entityRef, npcComponentType) ?: continue
+                    val npcName: String = npcEntity.roleName ?: continue
+
+                    if (displayName == testNPCName && npcName == "Rabbit") {
+                        val statMapType = EntityStatMap.getComponentType() as? ComponentType<EntityStore, EntityStatMap>
+                        if (statMapType != null) {
+                            val statMap = store.getComponent(entityRef, statMapType)
+                            if (statMap != null) {
+                                val healthValue = statMap.get(DefaultEntityStatTypes.getHealth())?.asPercentage() ?: 1.0f
+                                println("Health after growth: ${healthValue}%")
+                                healthKept[0] = healthValue == healthBeforeGrow[0]
+                            }
+                        }
+                        break
+                    }
+                }
+            })
+            checkLatch.countDown()
+        }
+        try { checkLatch.await(5, TimeUnit.SECONDS) } catch (e: InterruptedException) {}
+
+        if (healthKept[0]) {
+            result(true)
+        } else {
+            println("Grown adult did not keep health percentage from baby")
+            result(false, "Grown adult did not keep health percentage from baby")
+        }
+
+        world.execute { TestRunner.cleanupTestEntities(store, testNPCName) }
+    }
+}
+

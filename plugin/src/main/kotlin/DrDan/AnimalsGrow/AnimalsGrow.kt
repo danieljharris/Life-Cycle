@@ -5,13 +5,15 @@ import com.hypixel.hytale.server.core.plugin.JavaPlugin
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.core.util.Config
-import org.slf4j.LoggerFactory
+
 import DrDan.AnimalsGrow.command.AnimalsGrowCommand
 import DrDan.AnimalsGrow.command.AnimalsGrowTestCommand
 import DrDan.AnimalsGrow.config.AnimalsGrowConfig
 import DrDan.AnimalsGrow.event.AnimalsGrowEvent
 import DrDan.AnimalsGrow.grow_ecs.AnimalsGrowComponent
 import DrDan.AnimalsGrow.grow_ecs.AnimalsGrowSystem
+
+import org.slf4j.LoggerFactory
 
 private const val PLUGIN_NAME = "AnimalsGrow"
 
@@ -20,10 +22,6 @@ class AnimalsGrow(init: JavaPluginInit) : JavaPlugin(init) {
     private val config: Config<AnimalsGrowConfig> = this.withConfig(PLUGIN_NAME, AnimalsGrowConfig.CODEC)
 
     companion object {
-        /** Global debug flag for verbose logging */
-        @JvmStatic
-        var DEBUG = false
-        
         @Volatile
         private var componentType: ComponentType<EntityStore, AnimalsGrowComponent>? = null
 
@@ -46,12 +44,12 @@ class AnimalsGrow(init: JavaPluginInit) : JavaPlugin(init) {
         val growthConfig = config.get().growsUpInto
         AnimalsGrowAction.initialize(growthConfig)
         
-        // Register AnimalsGrowComponent
+        // Register components
         componentType = entityStoreRegistry.registerComponent(
             AnimalsGrowComponent::class.java
         ) { AnimalsGrowComponent() }
         
-        // Register systems - they use AnimalsGrow.getComponentType()
+        // Register systems
         entityStoreRegistry.registerSystem(AnimalsGrowEvent(growthConfig))
         entityStoreRegistry.registerSystem(AnimalsGrowSystem())
 
