@@ -50,14 +50,14 @@ object TestRunner {
         tests.add(KeepHealthOnGrowTest())
     }
     
-    fun runAllTests(world: World, store: Store<EntityStore>, playerPosition: Vector3d) {
+    fun runAllTests(world: World, store: Store<EntityStore>) {
         println("[AG_TEST:START:${tests.size}]")
         println("Running ${tests.size} tests...")
         
         Thread {
             for (test in tests) {
                 try {
-                    test.run(world, store, playerPosition)
+                    test.run(world, store)
                 } catch (e: Exception) {
                     println("[AG_TEST:END:${test.name}:FAIL:Exception:${e.message}]")
                 }
@@ -67,7 +67,7 @@ object TestRunner {
 }
 
 abstract class TestCase(val name: String) {
-    abstract fun run(world: World, store: Store<EntityStore>, playerPosition: Vector3d)
+    abstract fun run(world: World, store: Store<EntityStore>)
     fun start() {
         println("[AG_TEST:START:${name}]")
     }
@@ -131,16 +131,16 @@ abstract class TestCase(val name: String) {
 }
 
 class BabyGrowTest : TestCase("BabyGrowTest") {
-    override fun run(world: World, store: Store<EntityStore>, playerPosition: Vector3d) {
+    override fun run(world: World, store: Store<EntityStore>) {
         start()
         val testNPCName = "Test_BabyGrowTest"
-        val spawnPos = Vector3d(playerPosition.x + 2, playerPosition.y, playerPosition.z)
+        val spawnPos = Vector3d(0.0, 115.0, 0.0)
         spawn(world, store, spawnPos, testNPCName)
 
         println("[AG_TEST:COMMAND:time midday]")
         println("[AG_TEST:COMMAND:time midnight]")
         println("[AG_TEST:COMMAND:time midday]")
-        Thread.sleep(1000)
+        Thread.sleep(2000)
 
         val spawnedRef = getSpawned(world, store, testNPCName)
         if (spawnedRef == null) {
@@ -179,10 +179,10 @@ class BabyGrowTest : TestCase("BabyGrowTest") {
 }
 
 class BabyHasGrowthComponentTest : TestCase("BabyHasGrowthComponent") {
-    override fun run(world: World, store: Store<EntityStore>, playerPosition: Vector3d) {
+    override fun run(world: World, store: Store<EntityStore>) {
         start()
         val testNPCName = "Test_BabyHasGrowthComponent"
-        val spawnPos = Vector3d(playerPosition.x + 2, playerPosition.y, playerPosition.z)
+        val spawnPos = Vector3d(0.0, 115.0, 0.0)
         val ref = spawn(world, store, spawnPos, testNPCName)
 
         val hasGrowthComponent = arrayOf(false)
@@ -208,10 +208,10 @@ class BabyHasGrowthComponentTest : TestCase("BabyHasGrowthComponent") {
 }
 
 class KeepHealthOnGrowTest : TestCase("KeepHealthOnGrowTest") {
-    override fun run(world: World, store: Store<EntityStore>, playerPosition: Vector3d) {
+    override fun run(world: World, store: Store<EntityStore>) {
         start()
         val testNPCName = "Test_KeepHealthOnGrowTest"
-        val spawnPos = Vector3d(playerPosition.x + 2, playerPosition.y, playerPosition.z)
+        val spawnPos = Vector3d(0.0, 115.0, 0.0)
         val ref = spawn(world, store, spawnPos, testNPCName)
 
         val healthBeforeGrow = arrayOf(1.0f)
@@ -236,7 +236,7 @@ class KeepHealthOnGrowTest : TestCase("KeepHealthOnGrowTest") {
         println("[AG_TEST:COMMAND:time midday]")
         println("[AG_TEST:COMMAND:time midnight]")
         println("[AG_TEST:COMMAND:time midday]")
-        Thread.sleep(1000)
+        Thread.sleep(2000)
 
         val spawnedRef = getSpawned(world, store, testNPCName)
         if (spawnedRef == null) {

@@ -1,5 +1,9 @@
 package DrDan.AnimalsGrow
 
+import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType
+import com.hypixel.hytale.math.vector.Vector3i
+import com.hypixel.hytale.math.vector.Vector3d
+import com.hypixel.hytale.protocol.BlockMaterial
 import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.server.core.Message
@@ -12,6 +16,7 @@ import com.hypixel.hytale.server.npc.entities.NPCEntity
 import com.hypixel.hytale.server.core.entity.nameplate.Nameplate
 import com.hypixel.hytale.server.core.entity.effect.ActiveEntityEffect
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
@@ -62,7 +67,7 @@ object AnimalsGrowAction {
             val transfer = captureTransferProperties(ref, store)
             
             // Log the transformation
-            println("Animal growing: $npcName -> $adultName at ${transform.position} (health: ${(transfer.healthPercentage * 100).toInt()}%)")
+            println("Animal growing: $npcName -> $adultName at ${transform.position}")
             
             // Remove the baby entity
             commandBuffer.removeEntity(ref, RemoveReason.REMOVE)
@@ -71,15 +76,57 @@ object AnimalsGrowAction {
             val world = Universe.get().defaultWorld
             if (world != null) {
                 world.execute {
-                    val spawnResult = NPCPlugin.get().spawnNPC(store, adultName, null, transform.position, transform.rotation)
-                    
-                    // spawnNPC returns a Pair<Ref, INonPlayerCharacter> - extract the Ref
-                    val adultRef = spawnResult?.first()
-                    
-                    // Apply transferred properties to the adult
-                    if (adultRef != null) {
-                        applyTransferProperties(adultRef, store, transfer)
+                    var spawnPos = transform.position
+                    var blockSpawnPos = Vector3i(
+                        spawnPos.x.toInt(),
+                        spawnPos.y.toInt(),
+                        spawnPos.z.toInt()
+                    )
+
+                    var blockType: BlockType = world.getBlockType(blockSpawnPos)?: return@execute
+                    var material: BlockMaterial = blockType.material
+
+                    if (material == BlockMaterial.Solid) {
+                        println("Spawn position blocked for adult at ${spawnPos}, searching nearby...")
+
+                        val offsets = listOf(
+                            Vector3i(-1, 0, -1),
+                            Vector3i(-1, 0, 0),
+                            Vector3i(-1, 0, 1),
+                            Vector3i(0, 0, -1),
+                            Vector3i(0, 0, 1),
+                            Vector3i(1, 0, -1),
+                            Vector3i(1, 0, 0),
+                            Vector3i(1, 0, 1),
+                        )
+                        for (offset in offsets) {
+
+                            var tempSpawnPos = blockSpawnPos
+                            var tempSpawnPosOffset = tempSpawnPos.add(offset)
+
+                            val checkBlockType = world.getBlockType(tempSpawnPosOffset) ?: continue
+                            if (checkBlockType.material == BlockMaterial.Empty) {
+                                spawnPos = tempSpawnPosOffset.toVector3d()
+                                println("Found nearby spawn position for adult at ${spawnPos}")
+                                break
+                            }
+                        }
                     }
+                    else {
+                        println("Spawn position clear for adult at ${spawnPos}")
+                    }
+
+                    // Set spawn location in center of block
+                    spawnPos = Vector3d(
+                        spawnPos.x.toInt().toDouble() + 0.5,
+                        spawnPos.y.toInt().toDouble(),
+                        spawnPos.z.toInt().toDouble() + 0.5
+                    )
+
+                    val spawnResult = NPCPlugin.get().spawnNPC(store, adultName, null, spawnPos, transform.rotation)
+                    
+                    val adultRef = spawnResult?.first()
+                    if (adultRef != null) { applyTransferProperties(adultRef, store, transfer) }
                 }
             } else {
                 println("ERROR: Could not get default world from Universe!")

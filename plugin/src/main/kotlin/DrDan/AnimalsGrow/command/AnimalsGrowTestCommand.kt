@@ -27,13 +27,8 @@ class AnimalsGrowTestCommand : AbstractWorldCommand {
         world: World,
         store: Store<EntityStore>
     ) {
-        // Use a default position for spawning test entities
-        val spawnPosition = Vector3d(0.0, 115.0, 0.0)
-        
-        println("=== AnimalsGrow Test Suite ===")
-        println("Test spawn position: $spawnPosition")
-        
-        TestRunner.runAllTests(world, store, spawnPosition)
+        println("=== AnimalsGrow Test Suite ===")        
+        TestRunner.runAllTests(world, store)
     }
 
     companion object {
