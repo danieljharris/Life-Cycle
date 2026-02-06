@@ -5,7 +5,6 @@
 # Details About the Repo & Code/Test Structure
 # Scripts
 ## Quick Start (Build, Deploy, and Run Server)
-- Prod build:
 ```bash
 ./run.sh
 ```
