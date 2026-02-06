@@ -53,10 +53,6 @@ class AnimalsGrowAnimationCommand : AbstractPlayerCommand {
                             true,
                             store
                     );
-
-                    // world.execute {
-                    //     npcEntity.playAnimation(entityRef, AnimationSlot.Action, "Eat", commandBuffer)
-                    // }
                     break
                 }
             }

@@ -12,9 +12,10 @@ import com.hypixel.hytale.protocol.AnimationSlot
 import com.hypixel.hytale.component.RemoveReason
 import com.hypixel.hytale.component.CommandBuffer
 import com.hypixel.hytale.component.ComponentType
+import com.hypixel.hytale.server.core.HytaleServer
 import com.hypixel.hytale.server.core.universe.Universe
 import com.hypixel.hytale.server.npc.entities.NPCEntity
-import com.hypixel.hytale.server.core.entity.AnimationUtils;
+import com.hypixel.hytale.server.core.entity.AnimationUtils
 import com.hypixel.hytale.server.core.entity.nameplate.Nameplate
 import com.hypixel.hytale.protocol.packets.entities.PlayAnimation
 import com.hypixel.hytale.server.core.entity.effect.ActiveEntityEffect
@@ -27,6 +28,9 @@ import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
 import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes
+
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.ScheduledFuture
 
 import DrDan.AnimalsGrow.config.GrowthEntry
 
@@ -138,10 +142,13 @@ object AnimalsGrowAction {
 
                     applyTransferProperties(adultRef, store, transfer)
                 }
-
-                // Finally remove the baby entity
-                commandBuffer.removeEntity(ref, RemoveReason.REMOVE)
             }
+
+            HytaleServer.SCHEDULED_EXECUTOR.schedule(Runnable {
+                world.execute {
+                    store.removeEntity(ref, RemoveReason.REMOVE)
+                }
+            }, 2, TimeUnit.SECONDS)
         } else {
             println("ERROR: Could not get default world from Universe!")
         }
