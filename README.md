@@ -1,4 +1,4 @@
-# Animal Growth - Hytale Plugin
+# Life Cycle - Hytale Plugin
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Animal_Growth-blue?logo=github)](https://github.com/danieljharris/Animal-Growth)
 
