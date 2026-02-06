@@ -21,12 +21,6 @@ import DrDan.AnimalsGrow.config.GrowthEntry
 import com.hypixel.hytale.math.vector.Vector3d
 import com.hypixel.hytale.math.vector.Vector3f
 
-data class SpawnOperation(
-    val position: Vector3d,
-    val rotation: Vector3f,
-    val npcName: String
-)
-
 class AnimalsGrowCommand : AbstractPlayerCommand {
     constructor() : super("ag", "Force all animals to grow from babies to adult")
 
@@ -38,31 +32,20 @@ class AnimalsGrowCommand : AbstractPlayerCommand {
         world: World
     ) {
         val growthConfig = AnimalsGrowAction.getConfig()
-        val spawnsToQueue = mutableListOf<SpawnOperation>()
         
         store.forEachChunk(java.util.function.BiConsumer { chunk: ArchetypeChunk<EntityStore>, commandBuffer: CommandBuffer<EntityStore> ->
             for (i in 0 until chunk.size()) {
                 val entityRef = chunk.getReferenceTo(i)
-                growEntity(entityRef, store, commandBuffer, growthConfig, spawnsToQueue)
+                growEntity(entityRef, store, commandBuffer, growthConfig)
             }
         })
-        
-        // After store processing completes, queue spawns on the world thread
-        if (spawnsToQueue.isNotEmpty()) {
-            for (spawn in spawnsToQueue) {
-                world.execute {
-                    NPCPlugin.get().spawnNPC(store, spawn.npcName, null, spawn.position, spawn.rotation)
-                }
-            }
-        }
     }
 
     private fun growEntity(
         ref: Ref<EntityStore>,
         store: Store<EntityStore>,
         commandBuffer: CommandBuffer<EntityStore>,
-        growthConfig: List<GrowthEntry>,
-        spawnsToQueue: MutableList<SpawnOperation>
+        growthConfig: List<GrowthEntry>
     ) {
         val npcComponentType = NPCEntity.getComponentType() as? ComponentType<EntityStore, NPCEntity> ?: return
         val npcEntity = store.getComponent(ref, npcComponentType) ?: return
@@ -70,12 +53,7 @@ class AnimalsGrowCommand : AbstractPlayerCommand {
 
         for (growthEntry in growthConfig) {
             if (growthEntry.baby == null || npcName != growthEntry.baby) continue
-            val adultName = growthEntry.adult ?: continue
-
-            val transformComponentType = TransformComponent.getComponentType() as? ComponentType<EntityStore, TransformComponent> ?: return
-            val transform = store.getComponent(ref, transformComponentType) ?: return
-            commandBuffer.removeEntity(ref, RemoveReason.REMOVE)
-            spawnsToQueue.add(SpawnOperation(transform.position, transform.rotation, adultName))
+            AnimalsGrowAction.grow(ref, store, commandBuffer)
             break
         }
     }
