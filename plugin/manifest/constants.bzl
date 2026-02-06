@@ -1,22 +1,18 @@
-"""
-Constants for the plugin manifest
-"""
-
-ARTIFACT_NAME = "ExamplePlugin"
-VERSION = "0.0.0-SNAPSHOT"
-GROUP = "com.example"
+ARTIFACT_NAME = "AnimalsGrow"
+VERSION = "0.1.0"
+GROUP = "DrDan"
 
 CONFIG = {
     "Version": VERSION,
     "Name": ARTIFACT_NAME,
     "Group": GROUP,
-    "Main": GROUP + ".exampleplugin.ExamplePlugin",
+    "Main": GROUP + ".AnimalsGrow.AnimalsGrow",
     "IncludesAssetPack": True,
     "Authors": [
         {
-            "Name": "Farakov Engineering",
-            "Email": "contact@farakovengineering.com",
-            "Url": "https://farakovengineering.com",
+            "Name": "Dr Daniel Harris",
+            "Email": "danieljharris26@yahoo.co.uk",
+            "Url": "https://github.com/danieljharris",
         },
     ],
 }

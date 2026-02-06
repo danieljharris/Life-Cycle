@@ -16,10 +16,10 @@ A Bazel-based, containerized setup for building and deploying Java Hytale plugin
 - Open in VS Code and Reopen in Container.
 - postCreate runs .devcontainer/install-dependencies.sh:
   - Installs buildifier
-  - Runs setup_server.sh (idempotent) to prepare /home/server:
+  - Runs setup_server.sh (idempotent) to prepare /workspace/server:
     - Uses /workspace/.local-assets if present
     - Otherwise downloads Assets.zip and HytaleServer.jar
-    - Copies start_server.sh into /home/server
+    - Copies start_server.sh into /workspace/server
 - Ports: 5520/udp exposed.
 - Assets mount: .local-assets → /workspace/.local-assets
 
@@ -38,12 +38,55 @@ bazel build //... --//build_flags:pipeline=prod
 ```
 
 ## Run the Server
+
+### Quick Start (Build, Deploy, and Run)
 ```bash
-cd /home/server
+./run.sh
+```
+
+### Manual Start
+```bash
+cd /workspace/server
 ./start_server.sh
 ```
 - Performs device auth if needed (stores refresh token), fetches profile/session, then runs:
   - java -jar HytaleServer.jar --assets Assets.zip --bind 0.0.0.0:5520
+
+## Connect to Server
+To find the server IP address:
+```bash
+hostname -I
+```
+Connect your Hytale client to the **first IP address** returned (typically the container's network IP).
+
+Example: If `hostname -I` returns `172.17.0.2 172.18.0.1`, connect to `172.17.0.2:5520`
+
+## Iterative Development
+Once the server is running, you can iterate quickly on your plugin:
+
+1. Make changes to your plugin code in `plugin/src/`
+2. Deploy the updated plugin:
+```bash
+./deploy.sh
+```
+3. In-game, reload your plugin:
+```
+/plugin reload DrDan:AnimalsGrow
+```
+
+The server will reload your updated plugin without needing a full restart.
+
+## Search for Hytale import
+Swap out "DefaultEntityStatTypes|EntityStatTypes"
+```bash
+find . -type f -name "*.jar" -print0 | xargs -0 -n1 sh -c 'jar tf "$0" 2>/dev/null | rg "DefaultEntityStatTypes|EntityStatTypes" -n --no-line-number && echo "-- in: $0"'
+```
+```
+jar tf /workspace/.local-assets/HytaleServer.jar | rg "particle"
+```
+```
+jar tf /workspace/.local-assets/HytaleServer.jar | rg -i "particle" | sed -n '1,200p'
+```
 
 ## Notes
 - Offline: place Assets.zip and HytaleServer.jar in .local-assets before container creation.

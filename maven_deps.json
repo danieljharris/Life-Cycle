@@ -34,6 +34,9 @@
       "org.slf4j:slf4j-api:${slf4j_version}",
       "ch.qos.logback:logback-classic:${logback_version}"
     ],
+    "kotlin": [
+      "org.jetbrains.kotlin:kotlin-stdlib:1.9.23"
+    ],
     "retrofit": [
       "com.squareup.retrofit2:retrofit:3.0.0",
       "com.squareup.retrofit2:converter-gson:3.0.0"

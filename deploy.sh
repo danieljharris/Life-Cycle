@@ -32,11 +32,34 @@ DIST_FILE="$EXECROOT/$OUTPUT_REL"
 
 if [ -n "$DIST_FILE" ]; then
     echo "Moving $DIST_FILE to server mods..."
-    mkdir -p /home/server/mods
-    cp "$DIST_FILE" /home/server/mods/
+    mkdir -p /workspace/server/mods
+    
+    # Remove existing jar files to avoid permission issues
+    rm -f /workspace/server/mods/*.jar
+    
+    cp "$DIST_FILE" /workspace/server/mods/
+    
+    # Set proper permissions on the copied file
+    chmod 644 /workspace/server/mods/*.jar
 else
     echo "Error: Could not locate distribution file."
     exit 1
 fi
 
 echo "Deployed plugin to server."
+
+# Check if Hytale server is running and reload plugin
+COMMAND_PIPE="/tmp/hytale_commands.fifo"
+if [ -f /tmp/hytale_java.pid ] && kill -0 $(cat /tmp/hytale_java.pid) 2>/dev/null; then
+    echo "Detected running Hytale server. Reloading plugin..."
+    
+    if [ -p "$COMMAND_PIPE" ]; then
+        echo "plugin reload DrDan:AnimalsGrow" > "$COMMAND_PIPE"
+        echo "✓ Reload command sent to server."
+    else
+        echo "⚠ Server is running but command pipe not found."
+        echo "  Please manually run: /plugin reload DrDan:AnimalsGrow"
+    fi
+else
+    echo "No running Hytale server detected. Plugin will load on next server start."
+fi
