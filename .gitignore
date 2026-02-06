@@ -81,3 +81,5 @@ user.bazelrc
 /logs/
 /universe/
 /server/
+
+hytale_auth_data.json
