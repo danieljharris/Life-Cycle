@@ -8,7 +8,6 @@ provided_deps = [
 ]
 
 shade_deps = [
-    "//libs/common-api:common-api",
     "@maven//:org_slf4j_slf4j_api",
     "@maven//:ch_qos_logback_logback_classic",
     "@maven//:com_google_code_gson_gson",
@@ -23,18 +22,6 @@ kt_jvm_library(
     deps = shade_deps + provided_deps + [
         "@maven//:org_jetbrains_kotlin_kotlin_stdlib",
     ],
-)
-
-environment_manifest(
-    name = "env-manifest",
-    library_labels = ["//libs/common-api"],
-)
-
-genrule(
-    name = "resource-environment",
-    srcs = [":env-manifest"],
-    outs = ["src/main/resources/env.yaml"],
-    cmd = "cp $< $@",
 )
 
 java_library(
@@ -56,7 +43,6 @@ java_binary(
     main_class = "none",
     resources = [
         "//plugin/manifest:manifest",
-        ":resource-environment",
     ],
     runtime_deps = [
         ":plugin_lib",

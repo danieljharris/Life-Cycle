@@ -56,9 +56,6 @@ dependencies {
     
     // Hytale Server API - load from local JAR if available
     compileOnly(files(rootProject.file(".local-assets/HytaleServer.jar")))
-    
-    // Common API library
-    implementation(project(":libs:common-api"))
 }
 
 // Task to download sources for dependencies (enables Ctrl+Click)

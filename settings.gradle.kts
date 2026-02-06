@@ -4,4 +4,3 @@
 rootProject.name = "hytale-plugin"
 
 include(":plugin")
-include(":libs:common-api")
