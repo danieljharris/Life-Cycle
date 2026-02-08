@@ -38,15 +38,14 @@ class AnimalsBreedEvent(
         val npc = store.getComponent(ref, npcComponentType) ?: return
         val npcName = npc.roleName ?: return
 
-        var breedEntry = config.find { it.breedingGroup?.contains(npcName) == true } ?: return
-        
-        // Create component with in-game spawn time and growth duration
-        val AnimalsBreedComponent = AnimalsBreedComponent(
-            breedingGroup = breedEntry.breedingGroup,
-        )
-        
-        commandBuffer.addComponent(ref, AnimalsBreed.getComponentType(), AnimalsBreedComponent)
-        println("AnimalsBreedEvent: Added breed component to $npcName, with breed group ${breedEntry.breedingGroup}")
+        val breedEntry = config.find { it.breedingGroup?.contains(npcName) == true } ?: return
+
+        // Create component with breeding group
+        val comp = AnimalsBreedComponent()
+        comp.breedingGroup = breedEntry.breedingGroup
+
+        commandBuffer.addComponent(ref, AnimalsBreed.getComponentType(), comp)
+        println("AnimalsBreedEvent: Added breed component to $npcName, with breed group ${breedEntry.breedingGroup?.joinToString()}")
     }
 
     override fun onEntityRemove(

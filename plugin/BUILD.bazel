@@ -19,6 +19,7 @@ _jar_name = "{}-{}.jar".format(ARTIFACT_NAME, VERSION)
 kt_jvm_library(
     name = "plugin_lib",
     srcs = glob([
+        "src/main/kotlin/DrDan/LifeCycle/**/*.kt",
         "src/main/kotlin/DrDan/AnimalsGrow/**/*.kt",
         "src/main/kotlin/DrDan/AnimalsBreed/**/*.kt",
     ]),

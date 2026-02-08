@@ -15,18 +15,37 @@ import org.bson.BsonValue
 
 class AnimalsBreedConfig {
     var breedGroup: MutableList<BreedEntry> = ArrayList()
+    var babyForAdult: MutableList<BabyForAdultEntry> = ArrayList()
 
     constructor() {
-        breedGroup.add(BreedEntry(listOf("Sheep", "Ram", "Mouflon"))) // Real thing, "Mouflon" can breed with "Sheep" and produce fertile offspring
-        breedGroup.add(BreedEntry(listOf("Pig", "Boar", "Pig_Wild")))
-        breedGroup.add(BreedEntry(listOf("Camel")))
-        breedGroup.add(BreedEntry(listOf("Chicken_Desert", "Chicken", "Skrill")))
-        breedGroup.add(BreedEntry(listOf("Cow", "Bison"))) // Real thing, called "Beefalo"
-        breedGroup.add(BreedEntry(listOf("Goat")))
-        breedGroup.add(BreedEntry(listOf("Horse")))
-        breedGroup.add(BreedEntry(listOf("Rabbit")))
-        breedGroup.add(BreedEntry(listOf("Turkey"))) // No real-world records of being able to breed with domestic chickens
-        breedGroup.add(BreedEntry(listOf("Warthog"))) // No recorded real-world records of being able to breed with domestic pigs/boars
+        breedGroup.add(BreedEntry(arrayOf("Sheep", "Ram", "Mouflon"))) // Real thing, "Mouflon" can breed with "Sheep" and produce fertile offspring
+        breedGroup.add(BreedEntry(arrayOf("Pig", "Boar", "Pig_Wild")))
+        breedGroup.add(BreedEntry(arrayOf("Camel")))
+        breedGroup.add(BreedEntry(arrayOf("Chicken_Desert", "Chicken", "Skrill")))
+        breedGroup.add(BreedEntry(arrayOf("Cow", "Bison"))) // Real thing, called "Beefalo"
+        breedGroup.add(BreedEntry(arrayOf("Goat")))
+        breedGroup.add(BreedEntry(arrayOf("Horse")))
+        breedGroup.add(BreedEntry(arrayOf("Rabbit")))
+        breedGroup.add(BreedEntry(arrayOf("Turkey"))) // No real-world records of being able to breed with domestic chickens
+        breedGroup.add(BreedEntry(arrayOf("Warthog"))) // No recorded real-world records of being able to breed with domestic pigs/boars
+
+        babyForAdult.add(BabyForAdultEntry("Sheep"         , "Sheep_Lamb"          ))
+        babyForAdult.add(BabyForAdultEntry("Pig"           , "Pig_Piglet"          ))
+        babyForAdult.add(BabyForAdultEntry("Bison"         , "Bison_Calf"          ))
+        babyForAdult.add(BabyForAdultEntry("Boar"          , "Boar_Piglet"         ))
+        babyForAdult.add(BabyForAdultEntry("Camel"         , "Camel_Calf"          ))
+        babyForAdult.add(BabyForAdultEntry("Chicken_Desert", "Chicken_Desert_Chick"))
+        babyForAdult.add(BabyForAdultEntry("Chicken"       , "Chicken_Chick"       ))
+        babyForAdult.add(BabyForAdultEntry("Cow"           , "Cow_Calf"            ))
+        babyForAdult.add(BabyForAdultEntry("Goat"          , "Goat_Kid"            ))
+        babyForAdult.add(BabyForAdultEntry("Horse"         , "Horse_Foal"          ))
+        babyForAdult.add(BabyForAdultEntry("Mouflon"       , "Mouflon_Lamb"        ))
+        babyForAdult.add(BabyForAdultEntry("Pig_Wild"      , "Pig_Wild_Piglet"     ))
+        babyForAdult.add(BabyForAdultEntry("Rabbit"        , "Bunny"               ))
+        babyForAdult.add(BabyForAdultEntry("Ram"           , "Ram_Lamb"            ))
+        babyForAdult.add(BabyForAdultEntry("Skrill"        , "Skrill_Chick"        ))
+        babyForAdult.add(BabyForAdultEntry("Turkey"        , "Turkey_Chick"        ))
+        babyForAdult.add(BabyForAdultEntry("Warthog"       , "Warthog_Piglet"      ))
     }
 
     private class ListCodec : Codec<MutableList<BreedEntry>> {

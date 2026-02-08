@@ -6,8 +6,7 @@ import com.hypixel.hytale.server.core.plugin.JavaPluginInit
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.core.util.Config
 
-// import DrDan.AnimalsBreed.command.AnimalsBreedCommand
-// import DrDan.AnimalsBreed.command.AnimalsBreedTestCommand
+import DrDan.AnimalsBreed.command.AnimalsBreedCommand
 import DrDan.AnimalsBreed.config.AnimalsBreedConfig
 import DrDan.AnimalsBreed.event.AnimalsBreedEvent
 import DrDan.AnimalsBreed.breed_ecs.AnimalsBreedComponent
@@ -40,8 +39,8 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
     override fun start() {
         logger.info("Starting $PLUGIN_NAME!")
         
-        val breedConfig = config.get().breedGroup
-        AnimalsBreedAction.initialize(breedConfig)
+        val fullConfig = config.get()
+        AnimalsBreedAction.initialize(fullConfig)
         
         // Register components
         componentType = entityStoreRegistry.registerComponent(
@@ -49,11 +48,10 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
         ) { AnimalsBreedComponent() }
         
         // Register systems
-        entityStoreRegistry.registerSystem(AnimalsBreedEvent(breedConfig))
+        entityStoreRegistry.registerSystem(AnimalsBreedEvent(fullConfig.breedGroup))
         entityStoreRegistry.registerSystem(AnimalsBreedSystem())
         
         // Register commands
-        // commandRegistry.registerCommand(AnimalsBreedCommand())
-        // commandRegistry.registerCommand(AnimalsBreedTestCommand())
+        commandRegistry.registerCommand(AnimalsBreedCommand())
     }
 }

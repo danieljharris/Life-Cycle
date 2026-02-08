@@ -5,11 +5,11 @@ import com.hypixel.hytale.codec.KeyedCodec
 import com.hypixel.hytale.codec.builder.BuilderCodec
 
 class BreedEntry {
-    var breedingGroup: List<String>? = null
+    var breedingGroup: Array<String>? = null
 
     constructor()
 
-    constructor(breedingGroup: List<String>?) {
+    constructor(breedingGroup: Array<String>?) {
         this.breedingGroup = breedingGroup
     }
 

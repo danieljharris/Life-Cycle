@@ -18,17 +18,23 @@ class AnimalsBreedComponent : Component<EntityStore> {
     var bredCooldownStartTime: Instant = Instant.EPOCH
     var bredCooldownDurationSeconds: Long = 3000L // 50 minutes cooldown after breeding
 
-    constructor() : this(Instant.EPOCH, 1800L) // Default 30 minutes in-game time ()
+    // Optional breeding group for this entity (role names of adults that constitute this group)
+    var breedingGroup: Array<String>? = null
 
-    constructor(inLoveStartTime: Instant, inLoveTimeoutDurationSeconds: Long = 1200L) {
+    constructor() : this(Instant.EPOCH, 1800L, null) // Default 30 minutes in-game time ()
+
+    constructor(inLoveStartTime: Instant, inLoveTimeoutDurationSeconds: Long = 1200L, breedingGroup: Array<String>? = null) {
         this.inLoveStartTime = inLoveStartTime
         this.inLoveTimeoutDurationSeconds = inLoveTimeoutDurationSeconds
+        this.breedingGroup = breedingGroup
     }
 
     constructor(other: AnimalsBreedComponent) {
         this.isInLove = other.isInLove
         this.inLoveStartTime = other.inLoveStartTime
         this.inLoveTimeoutDurationSeconds = other.inLoveTimeoutDurationSeconds
+
+        this.breedingGroup = other.breedingGroup
 
         this.recentlyBred = other.recentlyBred
         this.bredCooldownStartTime = other.bredCooldownStartTime
@@ -54,7 +60,7 @@ class AnimalsBreedComponent : Component<EntityStore> {
         return (inLoveTimeoutDurationSeconds - elapsedSeconds).coerceAtLeast(0L)
     }
 
-    fun getRecentlyBred(): Boolean = recentlyBred
+    
 
     fun shouldStopBredCooldown(currentGameTime: Instant): Boolean {
         val elapsedSeconds = Duration.between(bredCooldownStartTime, currentGameTime).seconds
