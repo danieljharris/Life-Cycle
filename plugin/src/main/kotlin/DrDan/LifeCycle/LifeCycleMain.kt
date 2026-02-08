@@ -20,7 +20,12 @@ import DrDan.AnimalsBreed.event.AnimalsBreedEvent
 import DrDan.AnimalsBreed.breed_ecs.*
 
 class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginInit) {
+
     private val logger = LoggerFactory.getLogger(javaClass)
+
+    // ----------------------------
+    // Model
+    // ----------------------------
 
     private data class PluginHandle(
         val name: String,
@@ -30,59 +35,18 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
         val manualStart: (JavaPlugin, Any) -> Unit
     )
 
+    // ----------------------------
+    // Discovery
+    // ----------------------------
+
     private val plugins: List<PluginHandle> = listOfNotNull(
-
-        // AnimalsGrow
-        load(
-            "AnimalsGrow",
-            "DrDan.AnimalsGrow.AnimalsGrow"
-        ) { plugin, instance ->
-            val growthConfig = readConfig<List<GrowthEntry>>(instance, "growsUpInto")
-                ?: return@load
-            
-            manualStartPlugin(
-                plugin = plugin,
-                instance = instance,
-                configFieldName = "growsUpInto",
-                initializeAction = { 
-                    @Suppress("UNCHECKED_CAST")
-                    AnimalsGrowAction.initialize(it as List<GrowthEntry>) 
-                },
-                components = listOf(AnimalsGrowComponent()),
-                events = listOf(AnimalsGrowEvent(growthConfig)),
-                systems = listOf(AnimalsGrowSystem()),
-                commands = listOf(AnimalsGrowCommand(), AnimalsGrowTestCommand())
-            )
-        },
-
-        // AnimalsBreed
-        load(
-            "AnimalsBreed",
-            "DrDan.AnimalsBreed.AnimalsBreed"
-        ) { plugin, instance ->
-            val breedConfig = readConfig<AnimalsBreedConfig>(instance)
-                ?: return@load
-            
-            manualStartPlugin(
-                plugin = plugin,
-                instance = instance,
-                configFieldName = null,
-                initializeAction = { 
-                    @Suppress("UNCHECKED_CAST")
-                    AnimalsBreedAction.initialize(it as AnimalsBreedConfig) 
-                },
-                components = listOf(AnimalsBreedComponent()),
-                events = listOf(AnimalsBreedEvent(breedConfig.breedGroup)),
-                systems = listOf(AnimalsBreedSystem()),
-                commands = listOf(AnimalsBreedCommand())
-            )
-        }
+        load("AnimalsGrow", "DrDan.AnimalsGrow.AnimalsGrow"),
+        load("AnimalsBreed", "DrDan.AnimalsBreed.AnimalsBreed")
     )
 
     private fun load(
         name: String,
-        className: String,
-        manualStart: (JavaPlugin, Any) -> Unit
+        className: String
     ): PluginHandle? =
         runCatching {
             val cls = Class.forName(className)
@@ -95,7 +59,7 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
                 instance = instance,
                 setup = cls.getDeclaredMethod("setup").apply { isAccessible = true },
                 start = cls.getDeclaredMethod("start").apply { isAccessible = true },
-                manualStart = manualStart
+                manualStart = { plugin, inst -> autoDiscoverAndStart(plugin, inst, name) }
             )
         }.onSuccess {
             logger.info("$name loaded")
@@ -106,6 +70,10 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
                 logger.info("$name not present — skipping")
         }.getOrNull()
 
+    // ----------------------------
+    // Lifecycle
+    // ----------------------------
+
     override fun setup() {
         logger.info("LifeCycle wrapper setup")
     }
@@ -114,6 +82,10 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
         logger.info("LifeCycle wrapper start")
         plugins.forEach(::startPlugin)
     }
+
+    // ----------------------------
+    // Execution
+    // ----------------------------
 
     private fun startPlugin(p: PluginHandle) {
         repeat(10) { attempt ->
@@ -126,9 +98,21 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
                 return
             } catch (e: InvocationTargetException) {
                 when (val cause = e.cause) {
-                    is IllegalStateException -> handleIllegalState(p, cause, attempt)
+                    is IllegalStateException -> {
+                        try {
+                            handleIllegalState(p, cause, attempt)
+                        } catch (stop: Stop) {
+                            // Manual startup completed successfully
+                            logger.info("${p.name} started via manual startup")
+                            return
+                        }
+                    }
                     else -> return fail(p, e)
                 }
+            } catch (e: Stop) {
+                // Manual startup completed successfully
+                logger.info("${p.name} started via manual startup")
+                return
             } catch (e: Exception) {
                 return fail(p, e)
             }
@@ -164,6 +148,120 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
     }
 
     private object Stop : RuntimeException()
+
+    // ----------------------------
+    // Manual startup
+    // ----------------------------
+
+    private fun autoDiscoverAndStart(plugin: JavaPlugin, instance: Any, pluginName: String) {
+        logger.info("Auto-discovering classes for $pluginName...")
+        
+        // Read the start() method to discover what needs to be registered
+        val startMethod = instance.javaClass.getDeclaredMethod("start").apply { isAccessible = true }
+        val startMethodCode = startMethod.toString()
+        
+        // Find the package of the plugin
+        val packageName = instance.javaClass.`package`.name
+        logger.info("  Package: $packageName")
+        
+        // Auto-discover components (classes ending with "Component")
+        val components = discoverClasses(packageName, "Component")
+            .mapNotNull { instantiateIfPossible(it) }
+        logger.info("  Found ${components.size} components: ${components.map { it.javaClass.simpleName }}")
+        
+        // Auto-discover systems (classes ending with "System")
+        val systems = discoverClasses(packageName, "System")
+            .mapNotNull { instantiateIfPossible(it) }
+        logger.info("  Found ${systems.size} systems: ${systems.map { it.javaClass.simpleName }}")
+        
+        // Auto-discover events (classes ending with "Event")
+        // Events need config, so we need to read it first
+        val config = readConfig<Any>(instance) ?: return
+        val events = discoverClasses(packageName, "Event")
+            .mapNotNull { instantiateWithConfig(it, config) }
+        logger.info("  Found ${events.size} events: ${events.map { it.javaClass.simpleName }}")
+        
+        // Auto-discover commands (classes ending with "Command")
+        val commandClasses = discoverClasses(packageName, "Command")
+        logger.info("  Discovered ${commandClasses.size} command classes: ${commandClasses.map { it.simpleName }}")
+        val commands = commandClasses.mapNotNull { instantiateIfPossible(it) }
+        logger.info("  Instantiated ${commands.size} commands: ${commands.map { it.javaClass.simpleName }}")
+        
+        // Initialize action if there's an Action class
+        discoverClasses(packageName, "Action")
+            .firstOrNull()
+            ?.let { actionClass ->
+                runCatching {
+                    val initMethod = actionClass.getDeclaredMethod("initialize", Any::class.java)
+                        .apply { isAccessible = true }
+                    initMethod.invoke(null, config)
+                    logger.info("  Initialized Action: ${actionClass.simpleName}")
+                }
+            }
+        
+        manualStartPlugin(
+            plugin = plugin,
+            instance = instance,
+            configFieldName = null,
+            initializeAction = null,
+            components = components,
+            events = events,
+            systems = systems,
+            commands = commands
+        )
+        
+        logger.info("Auto-discovered $pluginName: ${components.size} components, ${events.size} events, ${systems.size} systems, ${commands.size} commands")
+    }
+    
+    private fun discoverClasses(packageName: String, suffix: String): List<Class<*>> {
+        val classes = mutableListOf<Class<*>>()
+        
+        // Try common subpackages
+        val subpackages = listOf("", ".command", ".event", ".${suffix.lowercase()}_ecs", ".config", ".grow_ecs", ".breed_ecs")
+        
+        for (subpackage in subpackages) {
+            val fullPackage = "$packageName$subpackage"
+            
+            // Try multiple naming patterns
+            val pluginBaseName = packageName.substringAfterLast('.')
+            val potentialNames = listOf(
+                "$pluginBaseName$suffix",
+                "${pluginBaseName}Test$suffix",
+                "$pluginBaseName${suffix}Test"
+            )
+            
+            potentialNames.forEach { className ->
+                runCatching {
+                    val fullClassName = "$fullPackage.$className"
+                    logger.debug("  Trying to load: $fullClassName")
+                    val cls = Class.forName(fullClassName)
+                    if (cls.simpleName.endsWith(suffix)) {
+                        classes.add(cls)
+                        logger.debug("  ✓ Found: ${cls.simpleName}")
+                    }
+                }.onFailure {
+                    // Class not found, that's okay
+                }
+            }
+        }
+        
+        return classes
+    }
+    
+    private fun instantiateIfPossible(clazz: Class<*>): Any? =
+        runCatching {
+            clazz.getDeclaredConstructor().newInstance()
+        }.getOrNull()
+    
+    private fun instantiateWithConfig(clazz: Class<*>, config: Any): Any? =
+        runCatching {
+            // Try constructor with config parameter
+            clazz.constructors.firstOrNull { it.parameterCount == 1 }
+                ?.newInstance(config)
+        }.getOrElse {
+            // Fall back to no-arg constructor
+            instantiateIfPossible(clazz)
+        }
 
     private fun manualStartPlugin(
         plugin: JavaPlugin,
@@ -217,16 +315,24 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
         }
 
         commands?.forEach { command ->
+            logger.info("Attempting to register command: ${command.javaClass.simpleName}")
             runCatching { 
                 @Suppress("UNCHECKED_CAST")
-                plugin.commandRegistry.registerCommand(
-                    command as com.hypixel.hytale.server.core.command.system.AbstractCommand
-                )
+                val abstractCommand = command as com.hypixel.hytale.server.core.command.system.AbstractCommand
+                logger.info("  - Cast successful to AbstractCommand")
+                plugin.commandRegistry.registerCommand(abstractCommand)
+                logger.info("  - Command registered successfully: ${command.javaClass.simpleName}")
+            }.onFailure { e ->
+                logger.warn("  - Failed to register command ${command.javaClass.simpleName}", e)
             }
         }
 
         logger.info("Manual ${instance.javaClass.simpleName} startup complete")
     }
+
+    // ----------------------------
+    // Reflection helpers
+    // ----------------------------
 
     private fun loadConfigs(instance: Any) =
         instance.javaClass.declaredFields
