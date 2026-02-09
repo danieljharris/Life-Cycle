@@ -15,13 +15,16 @@ import com.hypixel.hytale.component.RemoveReason
 import com.hypixel.hytale.server.npc.NPCPlugin
 import com.hypixel.hytale.server.npc.entities.NPCEntity
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
-import DrDan.AnimalsBreed.AnimalsBreedAction
-import DrDan.AnimalsBreed.config.BreedEntry
-import DrDan.AnimalsBreed.AnimalsBreed
-import DrDan.AnimalsBreed.breed_ecs.AnimalsBreedComponent
+import com.hypixel.hytale.server.core.modules.time.WorldTimeResource
 
 import com.hypixel.hytale.math.vector.Vector3d
 import com.hypixel.hytale.math.vector.Vector3f
+
+import DrDan.AnimalsBreed.AnimalsBreedAction
+import DrDan.AnimalsBreed.registry.AnimalsBreedRegistry
+import DrDan.AnimalsBreed.config.BreedEntry
+import DrDan.AnimalsBreed.AnimalsBreed
+import DrDan.AnimalsBreed.breed_ecs.AnimalsBreedComponent
 
 class AnimalsBreedCommand : AbstractPlayerCommand {
     constructor() : super("agbreed", "Put all animals in love")
@@ -56,8 +59,7 @@ class AnimalsBreedCommand : AbstractPlayerCommand {
         val npcName: String = try { npcEntity.getRoleName() } catch (e: Exception) { return }
 
         // Already has component?
-        val existing = store.getComponent(ref, AnimalsBreed.getComponentType())
-        if (existing != null) return
+        if (store.getComponent(ref, AnimalsBreed.getComponentType()) != null) return
 
         // Check breed groups
         val matchingGroup = breedGroups.find { it.breedingGroup?.contains(npcName) == true }
@@ -66,11 +68,16 @@ class AnimalsBreedCommand : AbstractPlayerCommand {
         val isMappedAdult = babyMappings.any { it.adult == npcName }
 
         if (matchingGroup != null || isMappedAdult) {
-            val comp = AnimalsBreedComponent()
-            if (matchingGroup != null) comp.breedingGroup = matchingGroup.breedingGroup
-            // add component to entity
+            if (matchingGroup?.breedingGroup.isNullOrEmpty()) {
+                LOGGER.at(java.util.logging.Level.WARNING).log("Skipping $npcName since it has no valid breeding group")
+                return
+            }
+
+            val worldTimeResource = store.getResource(WorldTimeResource.getResourceType())
+            val comp = AnimalsBreedComponent(worldTimeResource.gameTime, matchingGroup!!.breedingGroup!!)
             commandBuffer.addComponent(ref, AnimalsBreed.getComponentType(), comp)
-            LOGGER.at(java.util.logging.Level.INFO).log("Added AnimalsBreedComponent to $npcName (group=${matchingGroup?.breedingGroup?.joinToString()})")
+            AnimalsBreedRegistry.add(ref)
+            LOGGER.at(java.util.logging.Level.INFO).log("Added AnimalsBreedComponent to $npcName (group=${matchingGroup.breedingGroup?.joinToString()})")
         }
     }
 

@@ -18,6 +18,7 @@ import com.hypixel.hytale.component.spatial.SpatialResource
 import com.hypixel.hytale.server.core.entity.nameplate.Nameplate
 import com.hypixel.hytale.server.core.modules.entity.EntityModule
 import com.hypixel.hytale.server.core.universe.world.ParticleUtil
+import com.hypixel.hytale.server.core.modules.time.WorldTimeResource
 import com.hypixel.hytale.server.core.entity.effect.ActiveEntityEffect
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore
@@ -28,8 +29,6 @@ import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSpawner
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
 import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes
-
-
 import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport
 import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent
 import com.hypixel.hytale.server.core.asset.type.model.config.Model
@@ -37,19 +36,21 @@ import com.hypixel.hytale.server.core.asset.type.model.config.Model
 import it.unimi.dsi.fastutil.objects.ObjectList;
 
 import DrDan.AnimalsBreed.config.BreedEntry
+import DrDan.AnimalsBreed.config.BabyForAdultEntry
+import DrDan.AnimalsBreed.config.AnimalsBreedConfig
 
 object AnimalsBreedAction {
-    private var breedGroups: List<DrDan.AnimalsBreed.config.BreedEntry> = listOf()
-    private var babyForAdult: List<DrDan.AnimalsBreed.config.BabyForAdultEntry> = listOf()
+    private var breedGroups: List<BreedEntry> = listOf()
+    private var babyForAdult: List<BabyForAdultEntry> = listOf()
 
-    fun initialize(breedConfig: DrDan.AnimalsBreed.config.AnimalsBreedConfig) {
+    fun initialize(breedConfig: AnimalsBreedConfig) {
         this.breedGroups = breedConfig.breedGroup
         this.babyForAdult = breedConfig.babyForAdult
     }
 
-    fun getBreedGroups(): List<DrDan.AnimalsBreed.config.BreedEntry> = breedGroups
+    fun getBreedGroups(): List<BreedEntry> = breedGroups
 
-    fun getBabyMappings(): List<DrDan.AnimalsBreed.config.BabyForAdultEntry> = babyForAdult
+    fun getBabyMappings(): List<BabyForAdultEntry> = babyForAdult
 
     fun getBabyOptionsForParents(parents: Collection<String>): List<String> {
         val results = mutableSetOf<String>()
@@ -61,33 +62,47 @@ object AnimalsBreedAction {
         return results.toList()
     }
 
-    fun tryBreed(
-        ref: Ref<EntityStore>,
-        store: Store<EntityStore>,
-        commandBuffer: CommandBuffer<EntityStore>
+    fun breed(
+        ref1: Ref<EntityStore>,
+        ref2: Ref<EntityStore>,
+        store: Store<EntityStore>
     ) {
         val npcComponentType = NPCEntity.getComponentType() as? ComponentType<EntityStore, NPCEntity> ?: return
-        val npcEntity = store.getComponent(ref, npcComponentType) ?: return
-        val npcName: String = try { npcEntity.getRoleName() } catch (e: Exception) { return }
 
-        val breedEntry = breedGroups.find { it.breedingGroup?.contains(npcName) == true } ?: return
+        val breed1 = store.getComponent(ref1, AnimalsBreed.getComponentType()) ?: return
+        val npcEntity1 = store.getComponent(ref1, npcComponentType) ?: return
+        val npcName1: String = try { npcEntity1.getRoleName() } catch (e: Exception) { return }
+
+        val breed2 = store.getComponent(ref2, AnimalsBreed.getComponentType()) ?: return
+        val npcEntity2 = store.getComponent(ref2, npcComponentType) ?: return
+        val npcName2: String = try { npcEntity2.getRoleName() } catch (e: Exception) { return }
 
         val transformComponentType = TransformComponent.getComponentType() as? ComponentType<EntityStore, TransformComponent> ?: return
-        val transform: TransformComponent = store.getComponent(ref, transformComponentType) ?: return
+        val transform: TransformComponent = store.getComponent(ref1, transformComponentType) ?: return
 
         // find baby options for this parent
-        val babies = babyForAdult.filter { it.adult == npcName }.mapNotNull { it.baby }
-        if (babies.isEmpty()) return
+        val baby1 = babyForAdult.find { it.adult == npcName1 }?.baby ?: return
+        val baby2 = babyForAdult.find { it.adult == npcName2 }?.baby ?: return
 
-        val chosen = babies.shuffled().first()
-        try {
-            val npcPlugin = NPCPlugin.get()
-            val spawnPos = Vector3d(transform.position.x, transform.position.y, transform.position.z)
-            val yawPitch = Vector3f(0f, 0f, 0f)
-            npcPlugin.spawnNPC(store as com.hypixel.hytale.component.Store<com.hypixel.hytale.server.core.universe.world.storage.EntityStore>, chosen, chosen, spawnPos, yawPitch)
-            println("Animal breeding: $npcName spawned baby $chosen at ${transform.position}")
-        } catch (e: Exception) {
-            println("Animal breeding spawn failed: ${e}")
+        // Randomly pick one of the two strings as the baby to spawn
+        val chosen = listOf(baby1, baby2).shuffled().first()
+
+        val world = store.getExternalData().getWorld()
+        world.execute {
+            try {
+                NPCPlugin.get().spawnNPC(store, chosen, null, transform.position, transform.rotation)
+                println("Animal breeding: $npcName1 spawned baby $chosen at ${transform.position}")
+            } catch (e: Exception) {
+                println("Animal breeding spawn failed: ${e}")
+            }
+
+            val worldTimeResource = store.getResource(WorldTimeResource.getResourceType())
+
+            breed1.startBredCooldown(worldTimeResource.gameTime)
+            breed2.startBredCooldown(worldTimeResource.gameTime)
+
+            store.replaceComponent(ref1, AnimalsBreed.getComponentType(), breed1)
+            store.replaceComponent(ref2, AnimalsBreed.getComponentType(), breed2)
         }
     }
 }

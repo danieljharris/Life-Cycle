@@ -3,14 +3,17 @@ package DrDan.AnimalsBreed.breed_ecs
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.component.Component
+import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 
 import java.time.Instant
 import java.time.Duration
 
+import DrDan.AnimalsBreed.config.BreedEntry
+
 class AnimalsBreedComponent : Component<EntityStore> {
-    var isInLove: Boolean = false
+    var isInLove: Boolean = true
     var inLoveStartTime: Instant = Instant.EPOCH
     var inLoveTimeoutDurationSeconds: Long = 1800L // 30 minutes in-game time (adjust as needed)
 
@@ -19,11 +22,11 @@ class AnimalsBreedComponent : Component<EntityStore> {
     var bredCooldownDurationSeconds: Long = 3000L // 50 minutes cooldown after breeding
 
     // Optional breeding group for this entity (role names of adults that constitute this group)
-    var breedingGroup: Array<String>? = null
+    var breedingGroup: Array<String>
 
-    constructor() : this(Instant.EPOCH, 1800L, null) // Default 30 minutes in-game time ()
+    constructor() : this(Instant.EPOCH, arrayOf())
 
-    constructor(inLoveStartTime: Instant, inLoveTimeoutDurationSeconds: Long = 1200L, breedingGroup: Array<String>? = null) {
+    constructor(inLoveStartTime: Instant, breedingGroup: Array<String>) {
         this.inLoveStartTime = inLoveStartTime
         this.inLoveTimeoutDurationSeconds = inLoveTimeoutDurationSeconds
         this.breedingGroup = breedingGroup
@@ -44,6 +47,8 @@ class AnimalsBreedComponent : Component<EntityStore> {
     override fun clone(): Component<EntityStore> = AnimalsBreedComponent(this)
 
     fun getIsInLove(): Boolean = isInLove
+    fun getIsRecentlyBred(): Boolean = recentlyBred
+    // property `breedingGroup` provides its own getter; avoid duplicate JVM signature
 
     fun shouldStopInLove(currentGameTime: Instant): Boolean {
         val elapsedSeconds = Duration.between(inLoveStartTime, currentGameTime).seconds
@@ -59,8 +64,6 @@ class AnimalsBreedComponent : Component<EntityStore> {
         val elapsedSeconds = Duration.between(inLoveStartTime, currentGameTime).seconds
         return (inLoveTimeoutDurationSeconds - elapsedSeconds).coerceAtLeast(0L)
     }
-
-    
 
     fun shouldStopBredCooldown(currentGameTime: Instant): Boolean {
         val elapsedSeconds = Duration.between(bredCooldownStartTime, currentGameTime).seconds
@@ -82,8 +85,19 @@ class AnimalsBreedComponent : Component<EntityStore> {
         inLoveStartTime = currentGameTime
     }
 
+    fun stopInLove() {
+        isInLove = false
+        inLoveStartTime = Instant.EPOCH
+    }
+
     fun startBredCooldown(currentGameTime: Instant) {
+        isInLove = false
         recentlyBred = true
         bredCooldownStartTime = currentGameTime
+    }
+
+    fun stopBredCooldown() {
+        recentlyBred = false
+        bredCooldownStartTime = Instant.EPOCH
     }
 }

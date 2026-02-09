@@ -23,10 +23,6 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    // ----------------------------
-    // Model
-    // ----------------------------
-
     private data class PluginHandle(
         val name: String,
         val instance: Any,
@@ -34,10 +30,6 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
         val start: Method,
         val manualStart: (JavaPlugin, Any) -> Unit
     )
-
-    // ----------------------------
-    // Discovery
-    // ----------------------------
 
     private val plugins: List<PluginHandle> = listOfNotNull(
         load("AnimalsGrow", "DrDan.AnimalsGrow.AnimalsGrow"),
@@ -70,10 +62,6 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
                 logger.info("$name not present — skipping")
         }.getOrNull()
 
-    // ----------------------------
-    // Lifecycle
-    // ----------------------------
-
     override fun setup() {
         logger.info("LifeCycle wrapper setup")
     }
@@ -82,10 +70,6 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
         logger.info("LifeCycle wrapper start")
         plugins.forEach(::startPlugin)
     }
-
-    // ----------------------------
-    // Execution
-    // ----------------------------
 
     private fun startPlugin(p: PluginHandle) {
         repeat(10) { attempt ->
@@ -148,10 +132,6 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
     }
 
     private object Stop : RuntimeException()
-
-    // ----------------------------
-    // Manual startup
-    // ----------------------------
 
     private fun autoDiscoverAndStart(plugin: JavaPlugin, instance: Any, pluginName: String) {
         logger.info("Auto-discovering classes for $pluginName...")
@@ -239,9 +219,7 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
                         classes.add(cls)
                         logger.debug("  ✓ Found: ${cls.simpleName}")
                     }
-                }.onFailure {
-                    // Class not found, that's okay
-                }
+                }.onFailure {}
             }
         }
         
@@ -255,11 +233,9 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
     
     private fun instantiateWithConfig(clazz: Class<*>, config: Any): Any? =
         runCatching {
-            // Try constructor with config parameter
             clazz.constructors.firstOrNull { it.parameterCount == 1 }
                 ?.newInstance(config)
         }.getOrElse {
-            // Fall back to no-arg constructor
             instantiateIfPossible(clazz)
         }
 
@@ -329,10 +305,6 @@ class LifeCycleMain(private val pluginInit: JavaPluginInit) : JavaPlugin(pluginI
 
         logger.info("Manual ${instance.javaClass.simpleName} startup complete")
     }
-
-    // ----------------------------
-    // Reflection helpers
-    // ----------------------------
 
     private fun loadConfigs(instance: Any) =
         instance.javaClass.declaredFields

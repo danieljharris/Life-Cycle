@@ -42,7 +42,7 @@ class AnimalsBreedEvent(
 
         // Create component with breeding group
         val comp = AnimalsBreedComponent()
-        comp.breedingGroup = breedEntry.breedingGroup
+        comp.breedingGroup = breedEntry.breedingGroup ?: return
 
         commandBuffer.addComponent(ref, AnimalsBreed.getComponentType(), comp)
         println("AnimalsBreedEvent: Added breed component to $npcName, with breed group ${breedEntry.breedingGroup?.joinToString()}")

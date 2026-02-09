@@ -1,5 +1,5 @@
 ARTIFACT_NAME = "LifeCycle"
-VERSION = "0.1.1"
+VERSION = "1.0.0"
 GROUP = "DrDan"
 
 CONFIG = {
