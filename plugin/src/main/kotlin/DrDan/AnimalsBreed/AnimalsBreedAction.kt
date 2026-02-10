@@ -3,6 +3,7 @@ package DrDan.AnimalsBreed
 import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.protocol.Color
 import com.hypixel.hytale.component.Store
+import com.hypixel.hytale.logger.HytaleLogger
 import com.hypixel.hytale.server.core.Message
 import com.hypixel.hytale.server.npc.NPCPlugin
 import com.hypixel.hytale.math.vector.Vector3i
@@ -40,6 +41,8 @@ import DrDan.AnimalsBreed.config.BabyForAdultEntry
 import DrDan.AnimalsBreed.config.AnimalsBreedConfig
 
 object AnimalsBreedAction {
+    val LOGGER: HytaleLogger = HytaleLogger.forEnclosingClass()
+
     private var breedGroups: List<BreedEntry> = listOf()
     private var babyForAdult: List<BabyForAdultEntry> = listOf()
 
@@ -67,18 +70,22 @@ object AnimalsBreedAction {
         ref2: Ref<EntityStore>,
         store: Store<EntityStore>
     ) {
+        
         val npcComponentType = NPCEntity.getComponentType() as? ComponentType<EntityStore, NPCEntity> ?: return
-
+        
         val breed1 = store.getComponent(ref1, AnimalsBreed.getComponentType()) ?: return
         val npcEntity1 = store.getComponent(ref1, npcComponentType) ?: return
         val npcName1: String = try { npcEntity1.getRoleName() } catch (e: Exception) { return }
-
+        
         val breed2 = store.getComponent(ref2, AnimalsBreed.getComponentType()) ?: return
         val npcEntity2 = store.getComponent(ref2, npcComponentType) ?: return
         val npcName2: String = try { npcEntity2.getRoleName() } catch (e: Exception) { return }
-
+        
+        
         val transformComponentType = TransformComponent.getComponentType() as? ComponentType<EntityStore, TransformComponent> ?: return
         val transform: TransformComponent = store.getComponent(ref1, transformComponentType) ?: return
+        
+        LOGGER.at(java.util.logging.Level.INFO).log("Attempting to breed entities $npcName1 and $npcName2 at position ${transform.position}")
 
         // find baby options for this parent
         val baby1 = babyForAdult.find { it.adult == npcName1 }?.baby ?: return

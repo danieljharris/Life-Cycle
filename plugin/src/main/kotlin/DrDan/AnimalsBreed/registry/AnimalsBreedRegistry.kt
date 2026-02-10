@@ -37,7 +37,14 @@ object AnimalsBreedRegistry {
                 continue
             }
 
-            val breedComp = store.getComponent(ref, AnimalsBreed.getComponentType())
+            val breedComp = try {
+                store.getComponent(ref, AnimalsBreed.getComponentType())
+            } catch (_: Throwable) {
+                // invalid ref or store state; remove from registry and skip
+                remove(ref)
+                iterator.remove()
+                continue
+            }
             if (breedComp == null) {
                 // component removed, drop from registry and this iteration
                 remove(ref)
@@ -84,7 +91,13 @@ object AnimalsBreedRegistry {
     fun findClosestWithin(store: Store<EntityStore>, sourceRef: Ref<EntityStore>, maxDistance: Double, breedGroup: Array<String>, refs: Set<Ref<EntityStore>>): Ref<EntityStore>? {
         val transformType = TransformComponent.getComponentType() as? ComponentType<EntityStore, TransformComponent>?: return null
 
-        val sourceTransform = store.getComponent(sourceRef, transformType) ?: return null
+        val sourceTransform = try {
+            store.getComponent(sourceRef, transformType)
+        } catch (_: Throwable) {
+            // source ref became invalid
+            remove(sourceRef)
+            return null
+        } ?: return null
         val srcPos = sourceTransform.position
 
         var closestRef: Ref<EntityStore>? = null
@@ -94,13 +107,23 @@ object AnimalsBreedRegistry {
             if (other == sourceRef) continue
 
             // Check if other is in the same breed group
-            val otherBreedComp = store.getComponent(other, AnimalsBreed.getComponentType())
+            val otherBreedComp = try {
+                store.getComponent(other, AnimalsBreed.getComponentType())
+            } catch (_: Throwable) {
+                remove(other)
+                continue
+            }
             if (otherBreedComp == null) { remove(other); continue }
             val otherBreedGroup = otherBreedComp.breedingGroup
             if (otherBreedGroup.isEmpty() || !otherBreedGroup.any { breedGroup.contains(it) }) continue
 
             // Check distance is within maxDistance
-            val otherTransform = store.getComponent(other, transformType)
+            val otherTransform = try {
+                store.getComponent(other, transformType)
+            } catch (_: Throwable) {
+                remove(other)
+                continue
+            }
             if (otherTransform == null) { remove(other); continue }
             val dist = srcPos.distanceTo(otherTransform.position)
             if (dist <= maxDistance && dist < closestDist) {
