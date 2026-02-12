@@ -97,6 +97,7 @@ object AnimalsGrowAction {
         // Spawn on world thread for thread safety
         val world = store.getExternalData().getWorld()
         world.execute {
+            // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= Fence detection start -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             var spawnPos = transform.position
 
             var blockSpawnPos = Vector3i(
@@ -105,6 +106,8 @@ object AnimalsGrowAction {
                 spawnPos.z.toInt()
             )
 
+            // Determine which sides to check based on spawn position within the block
+            // If NPC in on the top right of the block then x = 1 and z = 1, if on the bottom left then x = -1 and z = -1, etc
             val xSide = sideFrom(spawnPos.x)
             val zSide = sideFrom(spawnPos.z)
 
@@ -114,15 +117,6 @@ object AnimalsGrowAction {
                 Vector3i(blockSpawnPos.x, blockSpawnPos.y, blockSpawnPos.z + zSide),
                 Vector3i(blockSpawnPos.x + xSide, blockSpawnPos.y, blockSpawnPos.z + zSide),
             )
-
-            // Searches for any blocks the adult may grow into
-            val offsetsInverse = listOf(
-                Vector3i(blockSpawnPos.x - xSide, blockSpawnPos.y, blockSpawnPos.z),
-                Vector3i(blockSpawnPos.x, blockSpawnPos.y, blockSpawnPos.z - zSide),
-                Vector3i(blockSpawnPos.x - xSide, blockSpawnPos.y, blockSpawnPos.z - zSide),
-            )
-
-            // TODO: Test what happens when ALL blocks nearby are solid!
 
             // 1. If no blocks around then don't change spawn position (spawn block plus 3 blocks on sideFrom())
             if (!(listOf(blockSpawnPos) + offsets).any() { pos -> isSolid(world, pos)}) {
@@ -139,7 +133,7 @@ object AnimalsGrowAction {
                 )
             }
 
-            // 3. If spawn block not empty search blocks using offsetsInverse() to find available block, spawn in the middle of that block
+            // 3. If spawn block not empty search blocks using offsets to find available block, spawn in the middle of that block
             else {
                 println("Fence Detection: Spawn blocked and nearby blocks detected, searching for nearby empty block to spawn adult")
                 val newSpawnPos: Vector3d? = offsets.find { pos -> !isSolid(world, pos) }?.toVector3d()
@@ -156,7 +150,8 @@ object AnimalsGrowAction {
                     )
                 }
             }
-
+            // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= Fence detection end -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+            
             val particlePosition = spawnPos
             val particlePositionOffset = particlePosition.add(Vector3d(0.0, 0.5, 0.0))
 
