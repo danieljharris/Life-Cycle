@@ -142,17 +142,19 @@ object AnimalsGrowAction {
             // 3. If spawn block not empty search blocks using offsetsInverse() to find available block, spawn in the middle of that block
             else {
                 println("Fence Detection: Spawn blocked and nearby blocks detected, searching for nearby empty block to spawn adult")
-                val newSpawnPos = offsets.find { pos -> !isSolid(world, pos) }?.toVector3d() ?: spawnPos
+                val newSpawnPos: Vector3d? = offsets.find { pos -> !isSolid(world, pos) }?.toVector3d()
+                if (newSpawnPos == null) {
+                    println("Fence Detection: No nearby empty blocks detected, spawning adult at baby's position ${spawnPos}, may cause suffocation if solid block")
+                } else {
+                    println("Fence Detection: Moving from initial spawn ${spawnPos} to new spawn ${newSpawnPos}")
 
-                println("Fence Detection: Moving from initial spawn ${spawnPos} to new spawn ${newSpawnPos}")
-
-                spawnPos = newSpawnPos
-                spawnPos = Vector3d(
-                    spawnPos.x.toInt().toDouble() + 0.5,
-                    spawnPos.y.toInt().toDouble(),
-                    spawnPos.z.toInt().toDouble() + 0.5
-                )
-                
+                    spawnPos = newSpawnPos
+                    spawnPos = Vector3d(
+                        spawnPos.x.toInt().toDouble() + 0.5,
+                        spawnPos.y.toInt().toDouble(),
+                        spawnPos.z.toInt().toDouble() + 0.5
+                    )
+                }
             }
 
             val particlePosition = spawnPos
