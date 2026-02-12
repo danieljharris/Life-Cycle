@@ -21,6 +21,7 @@ import com.hypixel.hytale.server.core.entity.effect.ActiveEntityEffect
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
+import com.hypixel.hytale.server.core.universe.world.World
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType
 import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent
 import com.hypixel.hytale.server.core.asset.type.particle.config.ParticleSpawner
@@ -54,6 +55,21 @@ object AnimalsGrowAction {
     
     fun getConfig(): List<GrowthEntry> = config
 
+    fun sideFrom(pos: Double): Int {
+        val frac = pos - kotlin.math.floor(pos)
+        return if (frac >= 0.5) 1 else -1
+    }
+
+    fun isSolid(world: World, pos: Vector3i): Boolean {
+        var result: Boolean
+        val blockType: BlockType = world.getBlockType(pos)?: return false
+        result = blockType.material == BlockMaterial.Solid
+
+        println("Fence Detection: Checking block at ${pos} - Material: ${blockType.material}, Solid: ${result}")
+
+        return result
+    }
+
     fun grow(
         ref: Ref<EntityStore>,
         store: Store<EntityStore>,
@@ -77,28 +93,11 @@ object AnimalsGrowAction {
         
         // Remove the baby entity
         commandBuffer.removeEntity(ref, RemoveReason.REMOVE)
-        
+
         // Spawn on world thread for thread safety
         val world = store.getExternalData().getWorld()
         world.execute {
             var spawnPos = transform.position
-
-            var xSide: Int
-            var zSide: Int
-
-            if (spawnPos.x - spawnPos.x.toInt() > 0.5) {
-                xSide = 1
-            }
-            else {
-                xSide = -1
-            }
-
-            if (spawnPos.z - spawnPos.z.toInt() > 0.5) {
-                zSide = 1
-            }
-            else {
-                zSide = -1
-            }
 
             var blockSpawnPos = Vector3i(
                 spawnPos.x.toInt(),
@@ -106,62 +105,54 @@ object AnimalsGrowAction {
                 spawnPos.z.toInt()
             )
 
-            var blockType: BlockType = world.getBlockType(blockSpawnPos)?: return@execute
-            var material: BlockMaterial = blockType.material
+            val xSide = sideFrom(spawnPos.x)
+            val zSide = sideFrom(spawnPos.z)
 
             // Searches for the cloest empty block
             val offsets = listOf(
-                Vector3i(xSide, 0, 0),
-                Vector3i(0, 0, zSide),
-                Vector3i(xSide, 0, zSide),
+                Vector3i(blockSpawnPos.x + xSide, blockSpawnPos.y, blockSpawnPos.z),
+                Vector3i(blockSpawnPos.x, blockSpawnPos.y, blockSpawnPos.z + zSide),
+                Vector3i(blockSpawnPos.x + xSide, blockSpawnPos.y, blockSpawnPos.z + zSide),
             )
 
             // Searches for any blocks the adult may grow into
             val offsetsInverse = listOf(
-                Vector3i(-xSide, 0, 0),
-                Vector3i(0, 0, -zSide),
-                Vector3i(-xSide, 0, -zSide),
+                Vector3i(blockSpawnPos.x - xSide, blockSpawnPos.y, blockSpawnPos.z),
+                Vector3i(blockSpawnPos.x, blockSpawnPos.y, blockSpawnPos.z - zSide),
+                Vector3i(blockSpawnPos.x - xSide, blockSpawnPos.y, blockSpawnPos.z - zSide),
             )
 
-            if (material == BlockMaterial.Solid) {
-                println("Spawn position blocked for adult at ${spawnPos}, searching nearby...")
-                for (offset in offsets) {
+            // TODO: Test what happens when ALL blocks nearby are solid!
 
-                    var tempSpawnPos = blockSpawnPos
-                    var tempSpawnPosOffset = tempSpawnPos.add(offset)
+            // 1. If no blocks around then don't change spawn position (spawn block plus 3 blocks on sideFrom())
+            if (!(listOf(blockSpawnPos) + offsets).any() { pos -> isSolid(world, pos)}) {
+                println("Fence Detection: No nearby blocks detected, spawning adult at baby's position ${spawnPos}")
+            }
 
-                    val checkBlockType = world.getBlockType(tempSpawnPosOffset) ?: continue
-                    if (checkBlockType.material == BlockMaterial.Empty) {
-                        spawnPos = tempSpawnPosOffset.toVector3d()
-                        println("Found nearby spawn position for adult at ${spawnPos}")
-                        break
-                    }
-                }
-
+            // 2. If spawn block is empty spawn in the middle of that block
+            else if (!isSolid(world, blockSpawnPos)) {
+                println("Fence Detection: Nearby blocks detected, but spawn position is empty, spawning adult at ${spawnPos} with center offset")
                 spawnPos = Vector3d(
                     spawnPos.x.toInt().toDouble() + 0.5,
                     spawnPos.y.toInt().toDouble(),
                     spawnPos.z.toInt().toDouble() + 0.5
                 )
             }
+
+            // 3. If spawn block not empty search blocks using offsetsInverse() to find available block, spawn in the middle of that block
             else {
-                println("Spawn position clear for adult at ${spawnPos}")
+                println("Fence Detection: Spawn blocked and nearby blocks detected, searching for nearby empty block to spawn adult")
+                val newSpawnPos = offsets.find { pos -> !isSolid(world, pos) }?.toVector3d() ?: spawnPos
 
-                val neighborHasBlocks = offsetsInverse.any { offset ->
-                    var tempSpawnPos = blockSpawnPos
-                    var tempSpawnPosOffset = tempSpawnPos.add(offset)
-                    val bt = world.getBlockType(tempSpawnPosOffset)
-                    bt != null && bt.material != BlockMaterial.Empty
-                }
+                println("Fence Detection: Moving from initial spawn ${spawnPos} to new spawn ${newSpawnPos}")
 
-                // If block close to baby move adult to center of the block to avoid gtowing into the block
-                if (neighborHasBlocks) {
-                    spawnPos = Vector3d(
-                        spawnPos.x.toInt().toDouble() + 0.5,
-                        spawnPos.y.toInt().toDouble(),
-                        spawnPos.z.toInt().toDouble() + 0.5
-                    )
-                }
+                spawnPos = newSpawnPos
+                spawnPos = Vector3d(
+                    spawnPos.x.toInt().toDouble() + 0.5,
+                    spawnPos.y.toInt().toDouble(),
+                    spawnPos.z.toInt().toDouble() + 0.5
+                )
+                
             }
 
             val particlePosition = spawnPos
@@ -187,7 +178,6 @@ object AnimalsGrowAction {
                 playerRefs,
                 store
             )
-
 
             val spawnResult = NPCPlugin.get().spawnNPC(store, adultName, null, spawnPos, transform.rotation)
             

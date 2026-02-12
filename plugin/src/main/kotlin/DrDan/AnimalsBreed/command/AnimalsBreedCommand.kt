@@ -20,6 +20,7 @@ import com.hypixel.hytale.server.core.modules.time.WorldTimeResource
 import com.hypixel.hytale.math.vector.Vector3d
 import com.hypixel.hytale.math.vector.Vector3f
 
+import DrDan.AnimalsBreed.config.BabyForAdultEntry
 import DrDan.AnimalsBreed.AnimalsBreedAction
 import DrDan.AnimalsBreed.registry.AnimalsBreedRegistry
 import DrDan.AnimalsBreed.config.BreedEntry
@@ -52,14 +53,11 @@ class AnimalsBreedCommand : AbstractPlayerCommand {
         store: Store<EntityStore>,
         commandBuffer: CommandBuffer<EntityStore>,
         breedGroups: List<BreedEntry>,
-        babyMappings: List<DrDan.AnimalsBreed.config.BabyForAdultEntry>
+        babyMappings: List<BabyForAdultEntry>
     ) {
         val npcComponentType = NPCEntity.getComponentType() as? ComponentType<EntityStore, NPCEntity> ?: return
         val npcEntity = store.getComponent(ref, npcComponentType) ?: return
         val npcName: String = try { npcEntity.getRoleName() } catch (e: Exception) { return }
-
-        // Already has component?
-        if (store.getComponent(ref, AnimalsBreed.getComponentType()) != null) return
 
         // Check breed groups
         val matchingGroup = breedGroups.find { it.breedingGroup?.contains(npcName) == true }
@@ -75,6 +73,12 @@ class AnimalsBreedCommand : AbstractPlayerCommand {
 
             val worldTimeResource = store.getResource(WorldTimeResource.getResourceType())
             val comp = AnimalsBreedComponent(worldTimeResource.gameTime, matchingGroup!!.breedingGroup!!)
+
+            // If component already exists, remove it and replace with new in-love version
+            try {
+                commandBuffer.removeComponent(ref, AnimalsBreed.getComponentType())
+            } catch (e: Exception) {}
+
             commandBuffer.addComponent(ref, AnimalsBreed.getComponentType(), comp)
             AnimalsBreedRegistry.add(ref)
             LOGGER.at(java.util.logging.Level.INFO).log("Added AnimalsBreedComponent to $npcName (group=${matchingGroup.breedingGroup?.joinToString()})")

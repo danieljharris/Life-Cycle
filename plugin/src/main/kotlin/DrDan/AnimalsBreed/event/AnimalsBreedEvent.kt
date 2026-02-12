@@ -53,5 +53,10 @@ class AnimalsBreedEvent(
         reason: RemoveReason,
         store: Store<EntityStore>,
         commandBuffer: CommandBuffer<EntityStore>
-    ) {}
+    ) {
+        // TODO: Fix this to remove from Registry when entity deleted
+        // if (reason != )
+        // if (store.getComponent(ref, AnimalsBreed.getComponentType()) != null) return
+        // AnimalsBreedRegistry.remove
+    }
 }

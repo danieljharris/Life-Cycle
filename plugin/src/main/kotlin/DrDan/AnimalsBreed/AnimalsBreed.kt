@@ -1,11 +1,13 @@
 package DrDan.AnimalsBreed
 
 import com.hypixel.hytale.component.ComponentType
+import com.hypixel.hytale.component.ComponentRegistryProxy
 import com.hypixel.hytale.server.core.plugin.JavaPlugin
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.core.util.Config
 import com.hypixel.hytale.server.core.HytaleServer
+import com.hypixel.hytale.server.core.command.system.CommandRegistry
 
 import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
@@ -40,7 +42,8 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
         config.save()
     }
 
-    override fun start() {
+    override fun start() { start(entityStoreRegistry, commandRegistry) }
+    fun start(entityStoreRegistry: ComponentRegistryProxy<EntityStore>, commandRegistry: CommandRegistry) {
         logger.info("Starting $PLUGIN_NAME!")
         
         val fullConfig = config.get()

@@ -52,7 +52,7 @@ object AnimalsBreedRegistry {
                 continue
             }
 
-            if (breedComp.getIsInLove() || breedComp.recentlyBred) {
+            if (!breedComp.getIsInLove() || breedComp.recentlyBred) {
                 iterator.remove()
                 continue
             }
@@ -84,8 +84,6 @@ object AnimalsBreedRegistry {
 
             iterator.remove()
         }
-
-        for (r in matched) remove(r)
     }
 
     fun findClosestWithin(store: Store<EntityStore>, sourceRef: Ref<EntityStore>, maxDistance: Double, breedGroup: Array<String>, refs: Set<Ref<EntityStore>>): Ref<EntityStore>? {

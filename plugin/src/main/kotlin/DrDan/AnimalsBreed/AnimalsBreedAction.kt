@@ -96,6 +96,32 @@ object AnimalsBreedAction {
 
         val world = store.getExternalData().getWorld()
         world.execute {
+
+            val particlePosition = transform.position
+            val particlePositionOffset = particlePosition.add(Vector3d(0.0, 0.5, 0.0))
+
+            val playerSpatialResource = store.getResource(EntityModule.get().getPlayerSpatialResourceType()) as? SpatialResource<Ref<EntityStore>, EntityStore>
+                ?: return@execute
+            val playerRefs = SpatialResource.getThreadLocalReferenceList<EntityStore>()
+            playerSpatialResource.getSpatialStructure().collect(particlePositionOffset, ParticleUtil.DEFAULT_PARTICLE_DISTANCE, playerRefs)
+
+            // Call ParticleUtil overload with explicit coordinates, rotation(0), scale=3, no sourceRef, null color
+            ParticleUtil.spawnParticleEffect(
+                "Hearts",
+                particlePosition.x,
+                particlePosition.y,
+                particlePosition.z,
+                0f,
+                0f,
+                0f,
+                3.0f,
+                null,
+                null,
+                playerRefs,
+                store
+            )
+
+            // TODO: Double check this try-catch is needed
             try {
                 NPCPlugin.get().spawnNPC(store, chosen, null, transform.position, transform.rotation)
                 println("Animal breeding: $npcName1 spawned baby $chosen at ${transform.position}")
