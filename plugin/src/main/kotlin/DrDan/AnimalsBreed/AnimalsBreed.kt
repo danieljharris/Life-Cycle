@@ -40,7 +40,7 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
     fun callSetup() { setup() }
     override fun setup() {
         logger.info("Registering $PLUGIN_NAME!")
-        
+
         config.load().join()
         config.save()
     }

@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Forwards [AG_TEST:COMMAND:...] lines from server logs into the server command FIFO
 COMMAND_FIFO="/tmp/hytale_commands.fifo"
-LOG_DIR="./server/logs"
+LOG_DIR="./hytale-downloader/Server/logs"
 
 if [ ! -d "$LOG_DIR" ]; then
   echo "Log dir $LOG_DIR not found" >&2

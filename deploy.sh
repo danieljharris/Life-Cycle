@@ -7,16 +7,6 @@ cleanup() {
 # Trap SIGINT (CTRL+C) and call the cleanup function
 trap cleanup SIGINT
 
-#!/bin/bash
-MARKER="/tmp/.deploy_finished"
-
-if [ -f "$MARKER" ]; then
-    echo "Deployment env ready!"
-else
-    echo "Deployment env not ready yet!"
-    exit
-fi
-
 ###############################
 
 # TODO: add select gui to pick pipeline
@@ -29,18 +19,19 @@ bazel build //... --//build_flags:pipeline=$PIPELINE
 EXECROOT=$(bazel info execution_root)
 OUTPUT_REL=$(bazel cquery //plugin:dist --output=files | tail -n1)
 DIST_FILE="$EXECROOT/$OUTPUT_REL"
+SERVER_MODS_DIR="/workspace/hytale-downloader/Server/mods"
 
 if [ -n "$DIST_FILE" ]; then
     echo "Moving $DIST_FILE to server mods..."
-    mkdir -p /workspace/server/mods
+    mkdir -p "$SERVER_MODS_DIR"
     
     # Remove existing jar files to avoid permission issues
-    rm -f /workspace/server/mods/*.jar
+    rm -f "$SERVER_MODS_DIR/*.jar"
     
-    cp "$DIST_FILE" /workspace/server/mods/
+    cp "$DIST_FILE" "$SERVER_MODS_DIR/"
     
     # Set proper permissions on the copied file
-    chmod 644 /workspace/server/mods/*.jar
+    chmod 644 "$SERVER_MODS_DIR/*.jar"
 else
     echo "Error: Could not locate distribution file."
     exit 1

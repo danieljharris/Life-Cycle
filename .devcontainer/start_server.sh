@@ -3,10 +3,10 @@
 # Configuration
 CLIENT_ID="hytale-server"
 SCOPES="openid offline auth:server"
-SERVER_DIR="/workspace/server"
+SERVER_DIR="/workspace/hytale-downloader/Server"
 AUTH_FILE="$SERVER_DIR/hytale_auth_data.json"
 SERVER_JAR="$SERVER_DIR/HytaleServer.jar"
-ASSETS_ZIP="$SERVER_DIR/Assets.zip"
+ASSETS_ZIP="/workspace/hytale-downloader/Assets.zip"
 SERVER_ARGS="--assets $ASSETS_ZIP --bind 0.0.0.0:5520 --allow-op"
 
 URL_DEVICE_AUTH="https://oauth.accounts.hytale.com/oauth2/device/auth"

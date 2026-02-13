@@ -36,7 +36,8 @@ echo ""
 echo "=========================================="
 echo "Starting Hytale Server"
 echo "=========================================="
-./.devcontainer/start_server.sh
+# /workspace/hytale-downloader/start.sh
+/workspace/.devcontainer/start_server.sh
 
 # When the server process exits, stop the forwarder
 echo "Server stopped; shutting down commandForwarder (pid $CF_PID)"

@@ -2,10 +2,11 @@ package DrDan.LifeCycle
 
 import com.hypixel.hytale.server.core.plugin.JavaPlugin
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit
+
 import org.slf4j.LoggerFactory
-import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.util.concurrent.CompletableFuture
+import java.lang.reflect.InvocationTargetException
 
 import DrDan.AnimalsGrow.*
 import DrDan.AnimalsGrow.event.*

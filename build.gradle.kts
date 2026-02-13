@@ -11,14 +11,9 @@ plugins {
 allprojects {
     repositories {
         mavenCentral()
-        // Hytale server JAR repository (if available)
-        maven {
-            url = uri("https://artifacts.yakovliam.com/")
-            isAllowInsecureProtocol = true
-        }
-        // Local flat directory for HytaleServer.jar
+        // Local flat directory for HytaleServer.jar (downloaded by setup script)
         flatDir {
-            dirs(rootProject.file(".local-assets"))
+            dirs(rootProject.file("hytale-downloader/Server"))
         }
     }
 }

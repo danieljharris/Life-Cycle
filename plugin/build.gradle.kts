@@ -54,8 +54,8 @@ dependencies {
     implementation("org.mapstruct:mapstruct:1.6.3")
     annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
     
-    // Hytale Server API - load from local JAR if available
-    compileOnly(files(rootProject.file(".local-assets/HytaleServer.jar")))
+    // Hytale Server API - load from downloaded server JAR (setup script places it under hytale-downloader/Server)
+    compileOnly(files(rootProject.file("hytale-downloader/Server/HytaleServer.jar")))
 }
 
 // Task to download sources for dependencies (enables Ctrl+Click)

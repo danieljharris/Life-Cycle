@@ -4,19 +4,21 @@ def _hytale_repo_impl(ctx):
 
     if local_jar.exists:
         print("DEBUG: Found local Hytale JAR at {}. Using it.".format(local_jar))
-        ctx.symlink(local_jar, "hytale.jar")
+        ctx.symlink(local_jar, "HytaleServer.jar")
     else:
-        print("DEBUG: Local JAR not found at {}. Downloading...".format(local_jar))
-        ctx.download(
-            url = "https://artifacts.yakovliam.com/HytaleServer.jar",
-            output = "hytale.jar",
-            # sha256 = "..." 
-        )
+        print("DEBUG: Local JAR not found at {}. Looking for server jar in workspace...".format(local_jar))
+        server_jar = workspace_root.get_child("hytale-downloader").get_child("Server").get_child("HytaleServer.jar")
+
+        if server_jar.exists:
+            print("DEBUG: Found server jar at {}. Using it.".format(server_jar))
+            ctx.symlink(server_jar, "HytaleServer.jar")
+        else:
+            ctx.fail("HytaleServer.jar not found in .local-assets or workspace; run the setup script to download it into /workspace/server")
 
     ctx.file("BUILD", """
 java_import(
     name = "server",
-    jars = ["hytale.jar"],
+    jars = ["HytaleServer.jar"],
     visibility = ["//visibility:public"],
 )
 """)
