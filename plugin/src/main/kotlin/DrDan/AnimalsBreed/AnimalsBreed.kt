@@ -23,8 +23,8 @@ import DrDan.AnimalsBreed.breed_ecs.AnimalsBreedSystem
 private const val PLUGIN_NAME = "AnimalsBreed"
 
 class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
-    private val logger = LoggerFactory.getLogger(AnimalsBreed::class.java)
-    private val config: Config<AnimalsBreedConfig> = this.withConfig(PLUGIN_NAME, AnimalsBreedConfig.CODEC)
+    private var logger = LoggerFactory.getLogger(AnimalsBreed::class.java)
+    private var config: Config<AnimalsBreedConfig> = Config<AnimalsBreedConfig>(init.getFile(), PLUGIN_NAME, AnimalsBreedConfig.CODEC)
     
     companion object {
         @Volatile
@@ -37,8 +37,11 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
         }
     }
 
+    fun callSetup() { setup() }
     override fun setup() {
         logger.info("Registering $PLUGIN_NAME!")
+        
+        config.load().join()
         config.save()
     }
 

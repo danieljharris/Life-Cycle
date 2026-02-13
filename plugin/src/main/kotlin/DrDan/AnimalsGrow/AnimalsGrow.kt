@@ -38,7 +38,6 @@ class AnimalsGrow(init: JavaPluginInit) : JavaPlugin(init) {
 
     fun callSetup() { setup() }
     override fun setup() {
-        logger = LoggerFactory.getLogger(AnimalsGrow::class.java)
         logger.info("Registering $PLUGIN_NAME!")
 
         config.load().join()

@@ -8,32 +8,32 @@ import java.lang.reflect.Method
 import java.util.concurrent.CompletableFuture
 
 import DrDan.AnimalsGrow.*
+import DrDan.AnimalsGrow.event.*
+import DrDan.AnimalsGrow.config.*
 import DrDan.AnimalsGrow.command.*
-import DrDan.AnimalsGrow.config.GrowthEntry
-import DrDan.AnimalsGrow.event.AnimalsGrowEvent
 import DrDan.AnimalsGrow.grow_ecs.*
 
 import DrDan.AnimalsBreed.*
-import DrDan.AnimalsBreed.command.*
+import DrDan.AnimalsBreed.event.*
 import DrDan.AnimalsBreed.config.*
-import DrDan.AnimalsBreed.event.AnimalsBreedEvent
+import DrDan.AnimalsBreed.command.*
 import DrDan.AnimalsBreed.breed_ecs.*
 
 class LifeCycleMain(init: JavaPluginInit) : JavaPlugin(init) {
     private val logger = LoggerFactory.getLogger(LifeCycleMain::class.java)
 
     val AnimalsGrowPlugin: AnimalsGrow = AnimalsGrow(init)
-    // val AnimalsBreedPlugin: AnimalsBreed = AnimalsBreed(init)
+    val AnimalsBreedPlugin: AnimalsBreed = AnimalsBreed(init)
 
     override fun setup() {
         logger.info("Registering LifeCycleMain!")
         AnimalsGrowPlugin.callSetup()
-        // AnimalsBreedPlugin.setup()
+        AnimalsBreedPlugin.callSetup()
     }
 
     override fun start() {
         logger.info("Starting LifeCycleMain!")
         AnimalsGrowPlugin.start(entityStoreRegistry, commandRegistry)
-        // AnimalsBreedPlugin.start()
+        AnimalsBreedPlugin.start(entityStoreRegistry, commandRegistry)
     }
 }
