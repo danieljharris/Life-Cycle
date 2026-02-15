@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# sleep for 1 second to allow server to create the FIFO before we start trying to write to it
+sleep 1
+
 set -euo pipefail
 
 # Forwards [AG_TEST:COMMAND:...] lines from server logs into the server command FIFO
