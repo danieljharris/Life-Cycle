@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory
 import java.lang.reflect.Method
 import java.util.concurrent.CompletableFuture
 import java.lang.reflect.InvocationTargetException
+import java.nio.file.Path
 
 import DrDan.AnimalsGrow.*
 import DrDan.AnimalsGrow.event.*
@@ -28,6 +29,7 @@ class LifeCycleMain(init: JavaPluginInit) : JavaPlugin(init) {
 
     override fun setup() {
         logger.info("Registering LifeCycleMain!")
+
         AnimalsGrowPlugin.callSetup()
         // AnimalsBreedPlugin.callSetup()
     }

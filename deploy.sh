@@ -12,13 +12,21 @@ trap cleanup SIGINT
 # TODO: add select gui to pick pipeline
 export PIPELINE=dev
 
-# Build all targets
-bazel build //... --//build_flags:pipeline=$PIPELINE
+# Build the dist target (explicitly include pipeline flag)
+if ! bazel build //plugin:dist --//build_flags:pipeline="$PIPELINE"; then
+    echo "Error: build failed"
+    exit 1
+fi
 
-# Locate dist
-EXECROOT=$(bazel info execution_root)
-OUTPUT_REL=$(bazel cquery //plugin:dist --output=files | tail -n1)
-DIST_FILE="$EXECROOT/$OUTPUT_REL"
+# Locate dist output (cquery prints the output path; make it absolute if necessary)
+OUTPUT_PATH=$(bazel cquery //plugin:dist --output=files --//build_flags:pipeline="$PIPELINE" | tail -n1)
+DIST_FILE="$OUTPUT_PATH"
+if [ -n "$DIST_FILE" ] && [ ! -e "$DIST_FILE" ]; then
+    EXECROOT=$(bazel info execution_root)
+    if [ -n "$EXECROOT" ] && [ -e "$EXECROOT/$DIST_FILE" ]; then
+        DIST_FILE="$EXECROOT/$DIST_FILE"
+    fi
+fi
 SERVER_MODS_DIR="/workspace/hytale-downloader/Server/mods"
 
 if [ -n "$DIST_FILE" ]; then
@@ -26,12 +34,12 @@ if [ -n "$DIST_FILE" ]; then
     mkdir -p "$SERVER_MODS_DIR"
     
     # Remove existing jar files to avoid permission issues
-    rm -f "$SERVER_MODS_DIR/*.jar"
-    
+    rm -f "$SERVER_MODS_DIR"/*.jar
+
     cp "$DIST_FILE" "$SERVER_MODS_DIR/"
-    
-    # Set proper permissions on the copied file
-    chmod 644 "$SERVER_MODS_DIR/*.jar"
+
+    # Set proper permissions on the copied file(s)
+    chmod 644 "$SERVER_MODS_DIR"/*.jar
 else
     echo "Error: Could not locate distribution file."
     exit 1

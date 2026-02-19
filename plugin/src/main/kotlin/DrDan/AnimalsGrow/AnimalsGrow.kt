@@ -19,10 +19,11 @@ import DrDan.AnimalsGrow.grow_ecs.AnimalsGrowComponent
 import DrDan.AnimalsGrow.grow_ecs.AnimalsGrowSystem
 
 private const val PLUGIN_NAME = "AnimalsGrow"
+private const val CONFIG_VERSION = "2"
 
 class AnimalsGrow(init: JavaPluginInit) : JavaPlugin(init) {
     private var logger = LoggerFactory.getLogger(AnimalsGrow::class.java)
-    private var config: Config<AnimalsGrowConfig> = Config<AnimalsGrowConfig>(init.getFile(), PLUGIN_NAME, AnimalsGrowConfig.CODEC)
+    private var config: Config<AnimalsGrowConfig> = Config<AnimalsGrowConfig>(getDataDirectory(), PLUGIN_NAME, AnimalsGrowConfig.CODEC)
 
     companion object {
         @Volatile

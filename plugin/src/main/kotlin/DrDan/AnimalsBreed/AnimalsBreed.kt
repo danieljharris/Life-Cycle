@@ -1,13 +1,14 @@
 package DrDan.AnimalsBreed
 
 import com.hypixel.hytale.component.ComponentType
-import com.hypixel.hytale.component.ComponentRegistryProxy
-import com.hypixel.hytale.server.core.plugin.JavaPlugin
-import com.hypixel.hytale.server.core.plugin.JavaPluginInit
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.core.util.Config
 import com.hypixel.hytale.server.core.HytaleServer
+import com.hypixel.hytale.server.core.plugin.JavaPlugin
+import com.hypixel.hytale.component.ComponentRegistryProxy
+import com.hypixel.hytale.server.core.plugin.JavaPluginInit
 import com.hypixel.hytale.server.core.command.system.CommandRegistry
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
+import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction
 
 import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
@@ -19,12 +20,13 @@ import DrDan.AnimalsBreed.config.AnimalsBreedConfig
 import DrDan.AnimalsBreed.event.AnimalsBreedEvent
 import DrDan.AnimalsBreed.breed_ecs.AnimalsBreedComponent
 import DrDan.AnimalsBreed.breed_ecs.AnimalsBreedSystem
+// import DrDan.AnimalsBreed.interaction.ExampleInteraction
 
 private const val PLUGIN_NAME = "AnimalsBreed"
 
 class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
     private var logger = LoggerFactory.getLogger(AnimalsBreed::class.java)
-    private var config: Config<AnimalsBreedConfig> = Config<AnimalsBreedConfig>(init.getFile(), PLUGIN_NAME, AnimalsBreedConfig.CODEC)
+    private var config: Config<AnimalsBreedConfig> = Config<AnimalsBreedConfig>(getDataDirectory(), PLUGIN_NAME, AnimalsBreedConfig.CODEC)
     
     companion object {
         @Volatile
@@ -43,6 +45,10 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
 
         config.load().join()
         config.save()
+
+        // TODO: See if this can be moved to start()
+        // this.getCodecRegistry(Interaction.CODEC).register("Example", ExampleInteraction::class.java, ExampleInteraction.CODEC)
+        // NPCPlugin.get().registerCoreComponentType("Breed", com.hypixel.hytale.builtin.adventure.npcshop.npc.builders.BuilderActionOpenShop::new)
     }
 
     override fun start() { start(entityStoreRegistry, commandRegistry) }
