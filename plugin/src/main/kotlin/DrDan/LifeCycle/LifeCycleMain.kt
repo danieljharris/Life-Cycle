@@ -15,28 +15,28 @@ import DrDan.AnimalsGrow.config.*
 import DrDan.AnimalsGrow.command.*
 import DrDan.AnimalsGrow.grow_ecs.*
 
-// import DrDan.AnimalsBreed.*
-// import DrDan.AnimalsBreed.event.*
-// import DrDan.AnimalsBreed.config.*
-// import DrDan.AnimalsBreed.command.*
-// import DrDan.AnimalsBreed.breed_ecs.*
+import DrDan.AnimalsBreed.*
+import DrDan.AnimalsBreed.event.*
+import DrDan.AnimalsBreed.config.*
+import DrDan.AnimalsBreed.command.*
+import DrDan.AnimalsBreed.breed_ecs.*
 
 class LifeCycleMain(init: JavaPluginInit) : JavaPlugin(init) {
     private val logger = LoggerFactory.getLogger(LifeCycleMain::class.java)
 
     val AnimalsGrowPlugin: AnimalsGrow = AnimalsGrow(init)
-    // val AnimalsBreedPlugin: AnimalsBreed = AnimalsBreed(init)
+    val AnimalsBreedPlugin: AnimalsBreed = AnimalsBreed(init)
 
     override fun setup() {
         logger.info("Registering LifeCycleMain!")
 
         AnimalsGrowPlugin.callSetup()
-        // AnimalsBreedPlugin.callSetup()
+        AnimalsBreedPlugin.callSetup()
     }
 
     override fun start() {
         logger.info("Starting LifeCycleMain!")
         AnimalsGrowPlugin.start(entityStoreRegistry, commandRegistry)
-        // AnimalsBreedPlugin.start(entityStoreRegistry, commandRegistry)
+        AnimalsBreedPlugin.start(entityStoreRegistry, commandRegistry)
     }
 }

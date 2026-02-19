@@ -9,9 +9,20 @@ import com.hypixel.hytale.server.core.plugin.JavaPluginInit
 import com.hypixel.hytale.server.core.command.system.CommandRegistry
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction
+import com.hypixel.hytale.assetstore.AssetPack
+import com.hypixel.hytale.common.util.FormatUtil
+import com.hypixel.hytale.logger.sentry.SkipSentryException
+import com.hypixel.hytale.server.core.asset.AssetModule
+import com.hypixel.hytale.server.core.asset.LoadAssetEvent
 
+import java.util.logging.Level
+import java.nio.file.FileSystem
 import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.Files
+import java.nio.file.FileSystems
 
 import DrDan.AnimalsBreed.registry.AnimalsBreedRegistry
 import DrDan.AnimalsBreed.registry.AnimalsBreedRegistrySystem
@@ -20,6 +31,7 @@ import DrDan.AnimalsBreed.config.AnimalsBreedConfig
 import DrDan.AnimalsBreed.event.AnimalsBreedEvent
 import DrDan.AnimalsBreed.breed_ecs.AnimalsBreedComponent
 import DrDan.AnimalsBreed.breed_ecs.AnimalsBreedSystem
+import DrDan.AnimalsBreed.resource_creator.ResourceCreator
 // import DrDan.AnimalsBreed.interaction.ExampleInteraction
 
 private const val PLUGIN_NAME = "AnimalsBreed"
@@ -46,6 +58,13 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
         config.load().join()
         config.save()
 
+        // val assetPacks: List<AssetPack> = AssetModule.get().getAssetPacks()
+
+        // logger.info("Asset found at 1 ${assetPacks[2].getRoot()}")
+
+        // val rc = ResourceCreator()
+        // rc.mergePatch(Path.of("Server/NPC/Roles/Creature/Livestock/Tamed/Tamed_Bison.json"), "")
+
         // TODO: See if this can be moved to start()
         // this.getCodecRegistry(Interaction.CODEC).register("Example", ExampleInteraction::class.java, ExampleInteraction.CODEC)
         // NPCPlugin.get().registerCoreComponentType("Breed", com.hypixel.hytale.builtin.adventure.npcshop.npc.builders.BuilderActionOpenShop::new)
@@ -54,6 +73,73 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
     override fun start() { start(entityStoreRegistry, commandRegistry) }
     fun start(entityStoreRegistry: ComponentRegistryProxy<EntityStore>, commandRegistry: CommandRegistry) {
         logger.info("Starting $PLUGIN_NAME!")
+
+        val assetPacks: List<AssetPack> = AssetModule.get().getAssetPacks()
+
+        logger.info("Asset found: getName = ${assetPacks.size}")
+        logger.info("Asset found 0: getName = ${assetPacks[0].getName()}")
+        logger.info("Asset found 0: getPackLocation = ${assetPacks[0].getPackLocation()}")
+        logger.info("Asset found 0: getRoot = ${assetPacks[0].getRoot()}")
+        logger.info("Asset found 0: getFileSystem = ${assetPacks[0].getFileSystem()}")
+        logger.info("Asset found 0: getPackLocation = ${assetPacks[0].getPackLocation()}")
+
+        val jsonFileToGet = Path.of("Server/NPC/Roles/Creature/Livestock/Tamed/Tamed_Bison.json")
+
+        // assetPath = /workspace/hytale-downloader/Assets.zip
+        val assetPath = Paths.get(assetPacks[0].getPackLocation().toString())
+
+        val rc = ResourceCreator()
+        rc.extractAsset(assetPath, jsonFileToGet)
+
+
+        // val zipFs = FileSystems.newFileSystem(assetPath, emptyMap<String, Any>())
+        // try {
+        //     val target: Path = zipFs.getPath(jsonFileToGet.toString())
+        //     if (Files.exists(target)) {
+        //         try {
+        //             val bytes = Files.readAllBytes(target)
+        //             val content = String(bytes)
+        //             logger.info("Contents of $jsonFileToGet:\n$content")
+        //         } catch (e: Exception) {
+        //             logger.warn("Failed reading $jsonFileToGet from ZIP", e)
+        //         }
+        //     } else {
+        //         logger.warn("JSON file not found in asset ZIP: $jsonFileToGet")
+        //     }
+        // } finally {
+        //     zipFs.close()
+        // }
+
+
+        // logger.info("Asset found 1: getName = ${assetPacks[1].getName()}")
+        // logger.info("Asset found 1: getPackLocation = ${assetPacks[1].getPackLocation()}")
+        // logger.info("Asset found 1: getRoot = ${assetPacks[1].getRoot()}")
+
+        // this.getEventRegistry().register(128.toShort(), LoadAssetEvent::class.java) { event ->
+        //     this.getLogger().at(Level.INFO).log("Loading Hytalor Patch assets phase...")
+        //     val start = System.nanoTime()
+        //     val assetPacks: List<AssetPack> = AssetModule.get().getAssetPacks()
+
+        //     for (assetPack in assetPacks) {
+        //         try {
+        //             val pmClass = Class.forName("com.hypixel.hytale.server.core.asset.PatchManager")
+        //             val getMethod = pmClass.getMethod("get")
+        //             val pm = getMethod.invoke(null)
+        //             val loadMethod = pmClass.getMethod("loadPatchAssets", assetPack.javaClass)
+        //             loadMethod.invoke(pm, assetPack)
+        //         } catch (e: Exception) {
+        //             logger.warn("Failed to load patch assets reflectively", e)
+        //         }
+        //     }
+
+        //     this.getLogger()
+        //         .at(Level.INFO)
+        //         .log(
+        //             "Loading Hytalor Patch assets phase completed! Boot time %s, Took %s",
+        //             FormatUtil.nanosToString(System.nanoTime() - event.getBootStart()),
+        //             FormatUtil.nanosToString(System.nanoTime() - start)
+        //         )
+        // }
         
         val fullConfig = config.get()
         AnimalsBreedAction.initialize(fullConfig)

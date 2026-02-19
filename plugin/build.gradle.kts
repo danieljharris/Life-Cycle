@@ -34,6 +34,8 @@ dependencies {
     
     // JSON (from maven_deps.json)
     implementation("com.google.code.gson:gson:2.13.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
+    implementation("io.github.evgenius1424:kotlin-json-merge-patch:1.0.0")
     
     // Caching
     implementation("com.github.ben-manes.caffeine:caffeine:3.2.2")

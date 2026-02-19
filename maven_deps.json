@@ -28,14 +28,16 @@
       "com.google.protobuf:protobuf-java:${protobuf_version}"
     ],
     "json": [
-      "com.google.code.gson:gson:${gson_version}"
+      "com.google.code.gson:gson:${gson_version}",
+      "org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0"
     ],
     "logging": [
       "org.slf4j:slf4j-api:${slf4j_version}",
       "ch.qos.logback:logback-classic:${logback_version}"
     ],
     "kotlin": [
-      "org.jetbrains.kotlin:kotlin-stdlib:1.9.23"
+      "org.jetbrains.kotlin:kotlin-stdlib:1.9.23",
+      "io.github.evgenius1424:kotlin-json-merge-patch:1.0.0"
     ],
     "retrofit": [
       "com.squareup.retrofit2:retrofit:3.0.0",
