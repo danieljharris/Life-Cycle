@@ -12,6 +12,10 @@ import com.hypixel.hytale.common.plugin.PluginManifest
 
 import io.github.evgenius1424.jsonmergepatch.mergePatch
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonArray
 import java.util.concurrent.ConcurrentHashMap
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -31,9 +35,63 @@ class ResourceCreator {
     // // {"a": "z", "e": "f"}
 
     // Ingredient_Fiber
-    // {"Modify":{"AttractiveItemSet":"Ingredient_Fiber"}}
+    // {"Modify":{"AttractiveItemSet":["Ingredient_Fiber"]}}
     // Server/NPC/Roles/Creature/Livestock/Tamed/Tamed_Bison.json
 
+    fun removeArrayValues(baseElem: JsonElement, patchElem: JsonElement): JsonElement {
+        if (baseElem is JsonObject && patchElem is JsonObject) {
+            val resultMap = mutableMapOf<String, JsonElement>()
+            // Keep keys from base, but apply removals where patch provides arrays/objects
+            for ((key, baseValue) in baseElem) {
+                val patchValue = patchElem[key]
+                if (patchValue != null) {
+                    when {
+                        patchValue is JsonArray && baseValue is JsonArray -> {
+                            val removeSet = HashSet<JsonElement>()
+                            for (e in patchValue) removeSet.add(e)
+                            val newArray = buildJsonArray {
+                                for (e in baseValue) { if (!removeSet.contains(e)) add(e) }
+                            }
+                            resultMap[key] = newArray
+                        }
+                        patchValue is JsonObject && baseValue is JsonObject -> {
+                            resultMap[key] = removeArrayValues(baseValue, patchValue)
+                        }
+                        else -> {
+                            // unsupported patch type for this operation — leave base value unchanged
+                            resultMap[key] = baseValue
+                        }
+                    }
+                } else {
+                    resultMap[key] = baseValue
+                }
+            }
+            return JsonObject(resultMap)
+        }
+        return baseElem
+    }
+
+    // Remove a single value from array
+    // base = {"Modify":{"AttractiveItemSet":["Ingredient_Fiber", "Plant_Cabbage"]}} + patch = {"Modify":{"AttractiveItemSet":["Ingredient_Fiber"]}} = {"Modify":{"AttractiveItemSet":["Plant_Cabbage"]}}
+    // Needs to first get the existing array, remove the value, then save the modified array back to the JSON
+    // The patch contains the value to remove and the path to get to the existing array
+    fun mergePatchArrayMove(hytaleAssetsZipPath: Path, jsonFileToGet: Path, patch: String) {
+        println("Base Path: $hytaleAssetsZipPath")
+        val baseFile = extractAsset(hytaleAssetsZipPath, jsonFileToGet)
+        if (baseFile.isBlank()) {
+            println("Base file empty or missing: $jsonFileToGet")
+            return
+        }
+
+        val target = Json.parseToJsonElement(baseFile)
+        val patchElement = Json.parseToJsonElement(patch)
+
+        val result = removeArrayValues(target, patchElement)
+        save(jsonFileToGet.toString(), Json.encodeToString(result))
+        registerPack()
+    }
+
+    // https://github.com/evgenius1424/kotlin-json-merge-patch
     // JSON Merge Patch https://datatracker.ietf.org/doc/html/rfc7386 / https://www.rfc-editor.org/rfc/rfc7396.txt
     fun mergePatch(hytaleAssetsZipPath: Path, jsonFileToGet: Path, patch: String) {
         println("Base Path: $hytaleAssetsZipPath")
@@ -64,19 +122,19 @@ class ResourceCreator {
 
         // TODO: Get this from /workspace/plugin/manifest/constants.bzl
         val manifest = PluginManifest(
-                "DrDan",                        // group
-                "Overrides",                    // name
-                Semver.fromString("1.0.0"), // version
-                "Asset overrides",              // description
-                mutableListOf(),                // authors
-                "",                             // website
-                null,                           // main
-                "2026.02.18-f3b8fff95",         // serverVersion
-                mutableMapOf(),                 // dependencies
-                mutableMapOf(),                 // optionalDependencies
-                mutableMapOf(),                // loadBefore
-                mutableListOf(),               // subPlugins
-                false                          // disabledByDefault
+            "DrDan",                        // group
+            "Overrides",                    // name
+            Semver.fromString("1.0.0"), // version
+            "Asset overrides",              // description
+            mutableListOf(),                // authors
+            "",                             // website
+            null,                           // main
+            "2026.02.18-f3b8fff95",         // serverVersion
+            mutableMapOf(),                 // dependencies
+            mutableMapOf(),                 // optionalDependencies
+            mutableMapOf(),                // loadBefore
+            mutableListOf(),               // subPlugins
+            false                          // disabledByDefault
         )
 
         try{

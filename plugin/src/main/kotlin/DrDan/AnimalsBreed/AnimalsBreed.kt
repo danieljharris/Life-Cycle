@@ -75,7 +75,8 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
 
         val rc = ResourceCreator()
         // rc.extractAsset(assetPath, jsonFileToGet)
-        rc.mergePatch(assetPath, jsonFileToGet, """{"Modify":{"AttractiveItemSet":["Ingredient_Fibre"]}}""")
+        // rc.mergePatch(assetPath, jsonFileToGet, """{"Modify":{"AttractiveItemSet":["Ingredient_Fibre"]}}""")
+        rc.mergePatchArrayMove(assetPath, jsonFileToGet, """{"Modify":{"AttractiveItemSet":["Tool_Feedbag"]}}""")
 
 
         // val assetPacks: List<AssetPack> = AssetModule.get().getAssetPacks()
