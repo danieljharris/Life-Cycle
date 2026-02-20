@@ -6,6 +6,9 @@ import com.hypixel.hytale.math.vector.Vector3d
 import com.hypixel.hytale.component.ComponentType
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
+import com.hypixel.hytale.server.core.asset.AssetModule
+import com.hypixel.hytale.common.semver.Semver
+import com.hypixel.hytale.common.plugin.PluginManifest
 
 import io.github.evgenius1424.jsonmergepatch.mergePatch
 import kotlinx.serialization.json.Json
@@ -20,7 +23,7 @@ import DrDan.AnimalsBreed.AnimalsBreed
 import DrDan.AnimalsBreed.AnimalsBreedAction
 
 class ResourceCreator {
-    val overridePath = "Server/Override/AnimalsBreed"
+    val overridePath = "Mods/DrDan_LifeCycle/Override/AnimalsBreed"
 
     // val target = Json.parseToJsonElement("""{"a": "b", "c": "d"}""")
     // val patch = Json.parseToJsonElement("""{"a": "z", "c": null, "e": "f"}""")
@@ -39,19 +42,51 @@ class ResourceCreator {
         val target = Json.parseToJsonElement(baseFile)
         val patchElement = Json.parseToJsonElement(patch)
         val result = target.mergePatch(patchElement)
-        println("Merged Result:\n$result")
-        // save(hytaleAssetPath.fileName.toString(), Json.encodeToString(result))
+        // println("Merged Result:\n$result")
+        save(jsonFileToGet.toString(), Json.encodeToString(result))
+        registerPack()
     }
 
     fun save(fileName: String, content: String) {
-        val fullPath = "$overridePath/$fileName"
+        val pathName = "$overridePath/$fileName"
         try {
-            val path = Paths.get(fullPath)
+            val path = Paths.get(pathName)
             Files.createDirectories(path.parent)
             Files.writeString(path, content)
+            println("Saved merged JSON to $path")
         } catch (e: java.io.IOException) {
             throw RuntimeException(e)
         }
+    }
+
+    fun registerPack() {
+        val path = Paths.get(overridePath)
+
+        // TODO: Get this from /workspace/plugin/manifest/constants.bzl
+        val manifest = PluginManifest(
+                "DrDan",                        // group
+                "Overrides",                    // name
+                Semver.fromString("1.0.0"), // version
+                "Asset overrides",              // description
+                mutableListOf(),                // authors
+                "",                             // website
+                null,                           // main
+                "2026.02.18-f3b8fff95",         // serverVersion
+                mutableMapOf(),                 // dependencies
+                mutableMapOf(),                 // optionalDependencies
+                mutableMapOf(),                // loadBefore
+                mutableListOf(),               // subPlugins
+                false                          // disabledByDefault
+        )
+
+        try{
+            AssetModule.get().unregisterPack("DrDan:Overrides")
+        } catch (e: Exception) {
+            println("No existing pack to unregister, proceeding with registration")
+        }
+        AssetModule.get().registerPack("DrDan:Overrides", path, manifest, false)
+
+        println("Registered asset pack from $path")
     }
 
     fun extractAsset(hytaleAssetsZipPath: Path, jsonFileToGet: Path): String {

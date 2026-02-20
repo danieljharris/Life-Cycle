@@ -58,22 +58,7 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
         config.load().join()
         config.save()
 
-        // val assetPacks: List<AssetPack> = AssetModule.get().getAssetPacks()
-
-        // logger.info("Asset found at 1 ${assetPacks[2].getRoot()}")
-
-        // val rc = ResourceCreator()
-        // rc.mergePatch(Path.of("Server/NPC/Roles/Creature/Livestock/Tamed/Tamed_Bison.json"), "")
-
-        // TODO: See if this can be moved to start()
-        // this.getCodecRegistry(Interaction.CODEC).register("Example", ExampleInteraction::class.java, ExampleInteraction.CODEC)
-        // NPCPlugin.get().registerCoreComponentType("Breed", com.hypixel.hytale.builtin.adventure.npcshop.npc.builders.BuilderActionOpenShop::new)
-    }
-
-    override fun start() { start(entityStoreRegistry, commandRegistry) }
-    fun start(entityStoreRegistry: ComponentRegistryProxy<EntityStore>, commandRegistry: CommandRegistry) {
-        logger.info("Starting $PLUGIN_NAME!")
-
+        // AssetModule.get().getBaseAssetPack().getRoot();
         val assetPacks: List<AssetPack> = AssetModule.get().getAssetPacks()
 
         logger.info("Asset found: getName = ${assetPacks.size}")
@@ -89,8 +74,25 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
         val assetPath = Paths.get(assetPacks[0].getPackLocation().toString())
 
         val rc = ResourceCreator()
-        rc.extractAsset(assetPath, jsonFileToGet)
+        // rc.extractAsset(assetPath, jsonFileToGet)
+        rc.mergePatch(assetPath, jsonFileToGet, """{"Modify":{"AttractiveItemSet":["Ingredient_Fibre"]}}""")
 
+
+        // val assetPacks: List<AssetPack> = AssetModule.get().getAssetPacks()
+
+        // logger.info("Asset found at 1 ${assetPacks[2].getRoot()}")
+
+        // val rc = ResourceCreator()
+        // rc.mergePatch(Path.of("Server/NPC/Roles/Creature/Livestock/Tamed/Tamed_Bison.json"), "")
+
+        // TODO: See if this can be moved to start()
+        // this.getCodecRegistry(Interaction.CODEC).register("Example", ExampleInteraction::class.java, ExampleInteraction.CODEC)
+        // NPCPlugin.get().registerCoreComponentType("Breed", com.hypixel.hytale.builtin.adventure.npcshop.npc.builders.BuilderActionOpenShop::new)
+    }
+
+    override fun start() { start(entityStoreRegistry, commandRegistry) }
+    fun start(entityStoreRegistry: ComponentRegistryProxy<EntityStore>, commandRegistry: CommandRegistry) {
+        logger.info("Starting $PLUGIN_NAME!")
 
         // val zipFs = FileSystems.newFileSystem(assetPath, emptyMap<String, Any>())
         // try {
