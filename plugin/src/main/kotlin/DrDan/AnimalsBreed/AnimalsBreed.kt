@@ -58,33 +58,16 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
         config.load().join()
         config.save()
 
-        // AssetModule.get().getBaseAssetPack().getRoot();
-        val assetPacks: List<AssetPack> = AssetModule.get().getAssetPacks()
 
-        logger.info("Asset found: getName = ${assetPacks.size}")
-        logger.info("Asset found 0: getName = ${assetPacks[0].getName()}")
-        logger.info("Asset found 0: getPackLocation = ${assetPacks[0].getPackLocation()}")
-        logger.info("Asset found 0: getRoot = ${assetPacks[0].getRoot()}")
-        logger.info("Asset found 0: getFileSystem = ${assetPacks[0].getFileSystem()}")
-        logger.info("Asset found 0: getPackLocation = ${assetPacks[0].getPackLocation()}")
-
-        // val jsonFileToGet = Path.of("Server/NPC/Roles/Creature/Livestock/Tamed/Tamed_Bison.json")
-        // val jsonFileToGet = Path.of("Server/NPC/Roles/Creature/Livestock/Tamed/Tamed_Mosshorn_Plain.json")
-
-        // assetPath = /workspace/hytale-downloader/Assets.zip
-        val assetPath = Paths.get(assetPacks[0].getPackLocation().toString())
-
-        val rc = ResourceCreator()
-        // rc.extractAsset(assetPath, jsonFileToGet)
-        // rc.mergePatch(assetPath, jsonFileToGet, """{"Modify":{"AttractiveItemSet":["Ingredient_Fibre"]}}""")
-        // rc.mergePatchArrayMove(assetPath, jsonFileToGet, """{"Modify":{"AttractiveItemSet":["Tool_Feedbag"]}}""")
-        val tamedNPCs = rc.listFilesInZipPath(assetPath, "Server/NPC/Roles/Creature/Livestock/Tamed")
-
+        val assetPath = AssetModule.get().getBaseAssetPack().packLocation
+        val rc = ResourceCreator(assetPath)
+        // rc.extractAsset(jsonFileToGet)
+        // rc.mergePatch(jsonFileToGet, """{"Modify":{"AttractiveItemSet":["Ingredient_Fibre"]}}""")
+        val tamedNPCs = rc.listFilesInZipPath("Server/NPC/Roles/Creature/Livestock/Tamed")
+        
         for (npcPath in tamedNPCs) {
-            logger.info("Tamed NPC JSON found in ZIP: $npcPath")
-            rc.mergePatchArrayMove(assetPath, 
-                                   npcPath, 
-                                   """{"Modify":{"AttractiveItemSet":["Tool_Feedbag"]}}""")
+            // logger.info("Tamed NPC JSON found in ZIP: $npcPath")
+            rc.mergePatchArrayMove(npcPath, """{"Modify":{"AttractiveItemSet":["Tool_Feedbag"]}}""")
         }
 
 

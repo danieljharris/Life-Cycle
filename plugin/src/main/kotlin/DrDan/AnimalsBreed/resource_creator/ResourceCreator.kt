@@ -27,8 +27,12 @@ import java.nio.file.FileSystems
 import DrDan.AnimalsBreed.AnimalsBreed
 import DrDan.AnimalsBreed.AnimalsBreedAction
 
-class ResourceCreator {
+class ResourceCreator(private val assetZipPath: Path) {
     val overridePath = "Mods/DrDan_LifeCycle/Override/AnimalsBreed"
+    
+    init {
+        registerPack()
+    }
 
     // val target = Json.parseToJsonElement("""{"a": "b", "c": "d"}""")
     // val patch = Json.parseToJsonElement("""{"a": "z", "c": null, "e": "f"}""")
@@ -76,9 +80,9 @@ class ResourceCreator {
     // base = {"Modify":{"AttractiveItemSet":["Ingredient_Fiber", "Plant_Cabbage"]}} + patch = {"Modify":{"AttractiveItemSet":["Ingredient_Fiber"]}} = {"Modify":{"AttractiveItemSet":["Plant_Cabbage"]}}
     // Needs to first get the existing array, remove the value, then save the modified array back to the JSON
     // The patch contains the value to remove and the path to get to the existing array
-    fun mergePatchArrayMove(hytaleAssetsZipPath: Path, jsonFileToGet: Path, patch: String) {
-        println("Base Path: $hytaleAssetsZipPath")
-        val baseFile = extractAsset(hytaleAssetsZipPath, jsonFileToGet)
+    fun mergePatchArrayMove(jsonFileToGet: Path, patch: String) {
+        // println("Base Path: $assetZipPath")
+        val baseFile = extractAsset(jsonFileToGet)
         if (baseFile.isBlank()) {
             println("Base file empty or missing: $jsonFileToGet")
             return
@@ -89,21 +93,21 @@ class ResourceCreator {
 
         val result = removeArrayValues(target, patchElement)
         save(jsonFileToGet.toString(), Json.encodeToString(result))
-        registerPack()
+        // registerPack()
     }
 
     // https://github.com/evgenius1424/kotlin-json-merge-patch
     // JSON Merge Patch https://datatracker.ietf.org/doc/html/rfc7386 / https://www.rfc-editor.org/rfc/rfc7396.txt
-    fun mergePatch(hytaleAssetsZipPath: Path, jsonFileToGet: Path, patch: String) {
-        println("Base Path: $hytaleAssetsZipPath")
-        val baseFile = extractAsset(hytaleAssetsZipPath, jsonFileToGet)
+    fun mergePatch(jsonFileToGet: Path, patch: String) {
+        // println("Base Path: $assetZipPath")
+        val baseFile = extractAsset(jsonFileToGet)
         // println("Base File Contents: $baseFile")
         val target = Json.parseToJsonElement(baseFile)
         val patchElement = Json.parseToJsonElement(patch)
         val result = target.mergePatch(patchElement)
         // println("Merged Result:\n$result")
         save(jsonFileToGet.toString(), Json.encodeToString(result))
-        registerPack()
+        // registerPack()
     }
 
     fun save(fileName: String, content: String) {
@@ -112,7 +116,7 @@ class ResourceCreator {
             val path = Paths.get(pathName)
             Files.createDirectories(path.parent)
             Files.writeString(path, content)
-            println("Saved merged JSON to $path")
+            // println("Saved merged JSON to $path")
         } catch (e: java.io.IOException) {
             throw RuntimeException(e)
         }
@@ -149,8 +153,8 @@ class ResourceCreator {
         println("Registered asset pack from $path")
     }
 
-    fun extractAsset(hytaleAssetsZipPath: Path, jsonFileToGet: Path): String {
-        val zipFs = FileSystems.newFileSystem(hytaleAssetsZipPath, emptyMap<String, Any>())
+    fun extractAsset(jsonFileToGet: Path): String {
+        val zipFs = FileSystems.newFileSystem(assetZipPath, emptyMap<String, Any>())
         var content: String = ""
         try {
             val target: Path = zipFs.getPath(jsonFileToGet.toString())
@@ -173,8 +177,8 @@ class ResourceCreator {
         return content
     }
 
-    fun listFilesInZipPath(hytaleAssetsZipPath: Path, dirPath: String = "Server/NPC/Roles/Creature/Livestock/Tamed"): Vector<Path> {
-        val zipFs = FileSystems.newFileSystem(hytaleAssetsZipPath, emptyMap<String, Any>())
+    fun listFilesInZipPath(dirPath: String = "Server/NPC/Roles/Creature/Livestock/Tamed"): Vector<Path> {
+        val zipFs = FileSystems.newFileSystem(assetZipPath, emptyMap<String, Any>())
         val result = Vector<Path>()
         try {
             val base = zipFs.getPath(dirPath)
