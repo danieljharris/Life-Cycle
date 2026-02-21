@@ -16,6 +16,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
+import java.util.Vector
 import java.util.concurrent.ConcurrentHashMap
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -137,12 +138,13 @@ class ResourceCreator {
             false                          // disabledByDefault
         )
 
-        try{
-            AssetModule.get().unregisterPack("DrDan:Overrides")
-        } catch (e: Exception) {
-            println("No existing pack to unregister, proceeding with registration")
-        }
-        AssetModule.get().registerPack("DrDan:Overrides", path, manifest, false)
+        // try{
+        //     AssetModule.get().unregisterPack("DrDan:Overrides")
+        // } catch (e: Exception) {
+        //     println("No existing pack to unregister, proceeding with registration")
+        // }
+        // AssetModule.get().registerPack("DrDan:Overrides", path, manifest, false)
+        AssetModule.get().registerPack("DrDan:Overrides", path, manifest, true)
 
         println("Registered asset pack from $path")
     }
@@ -169,5 +171,23 @@ class ResourceCreator {
         }
 
         return content
+    }
+
+    fun listFilesInZipPath(hytaleAssetsZipPath: Path, dirPath: String = "Server/NPC/Roles/Creature/Livestock/Tamed"): Vector<Path> {
+        val zipFs = FileSystems.newFileSystem(hytaleAssetsZipPath, emptyMap<String, Any>())
+        val result = Vector<Path>()
+        try {
+            val base = zipFs.getPath(dirPath)
+            if (Files.exists(base)) {
+                Files.walk(base).use { stream ->
+                    stream.filter { Files.isRegularFile(it) }.forEach { result.add(it) }
+                }
+            } else {
+                println("Directory not found in ZIP: $dirPath")
+            }
+        } finally {
+            zipFs.close()
+        }
+        return result
     }
 }

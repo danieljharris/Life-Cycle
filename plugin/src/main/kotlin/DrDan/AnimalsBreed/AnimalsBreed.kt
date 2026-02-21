@@ -68,7 +68,8 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
         logger.info("Asset found 0: getFileSystem = ${assetPacks[0].getFileSystem()}")
         logger.info("Asset found 0: getPackLocation = ${assetPacks[0].getPackLocation()}")
 
-        val jsonFileToGet = Path.of("Server/NPC/Roles/Creature/Livestock/Tamed/Tamed_Bison.json")
+        // val jsonFileToGet = Path.of("Server/NPC/Roles/Creature/Livestock/Tamed/Tamed_Bison.json")
+        // val jsonFileToGet = Path.of("Server/NPC/Roles/Creature/Livestock/Tamed/Tamed_Mosshorn_Plain.json")
 
         // assetPath = /workspace/hytale-downloader/Assets.zip
         val assetPath = Paths.get(assetPacks[0].getPackLocation().toString())
@@ -76,7 +77,15 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
         val rc = ResourceCreator()
         // rc.extractAsset(assetPath, jsonFileToGet)
         // rc.mergePatch(assetPath, jsonFileToGet, """{"Modify":{"AttractiveItemSet":["Ingredient_Fibre"]}}""")
-        rc.mergePatchArrayMove(assetPath, jsonFileToGet, """{"Modify":{"AttractiveItemSet":["Tool_Feedbag"]}}""")
+        // rc.mergePatchArrayMove(assetPath, jsonFileToGet, """{"Modify":{"AttractiveItemSet":["Tool_Feedbag"]}}""")
+        val tamedNPCs = rc.listFilesInZipPath(assetPath, "Server/NPC/Roles/Creature/Livestock/Tamed")
+
+        for (npcPath in tamedNPCs) {
+            logger.info("Tamed NPC JSON found in ZIP: $npcPath")
+            rc.mergePatchArrayMove(assetPath, 
+                                   npcPath, 
+                                   """{"Modify":{"AttractiveItemSet":["Tool_Feedbag"]}}""")
+        }
 
 
         // val assetPacks: List<AssetPack> = AssetModule.get().getAssetPacks()
