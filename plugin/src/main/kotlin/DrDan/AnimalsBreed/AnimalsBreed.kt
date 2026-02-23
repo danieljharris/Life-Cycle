@@ -1,38 +1,39 @@
 package DrDan.AnimalsBreed
 
+import com.hypixel.hytale.assetstore.AssetPack
+import com.hypixel.hytale.server.npc.NPCPlugin
+import com.hypixel.hytale.common.util.FormatUtil
 import com.hypixel.hytale.component.ComponentType
 import com.hypixel.hytale.server.core.util.Config
 import com.hypixel.hytale.server.core.HytaleServer
+import com.hypixel.hytale.server.core.asset.AssetModule
 import com.hypixel.hytale.server.core.plugin.JavaPlugin
 import com.hypixel.hytale.component.ComponentRegistryProxy
+import com.hypixel.hytale.server.core.asset.LoadAssetEvent
+import com.hypixel.hytale.logger.sentry.SkipSentryException
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit
 import com.hypixel.hytale.server.core.command.system.CommandRegistry
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction
-import com.hypixel.hytale.assetstore.AssetPack
-import com.hypixel.hytale.common.util.FormatUtil
-import com.hypixel.hytale.logger.sentry.SkipSentryException
-import com.hypixel.hytale.server.core.asset.AssetModule
-import com.hypixel.hytale.server.core.asset.LoadAssetEvent
 
-import java.util.logging.Level
-import java.nio.file.FileSystem
-import java.util.concurrent.TimeUnit
-import org.slf4j.LoggerFactory
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.nio.file.Files
+import java.nio.file.Paths
+import java.util.logging.Level
+import org.slf4j.LoggerFactory
+import java.nio.file.FileSystem
 import java.nio.file.FileSystems
+import java.util.concurrent.TimeUnit
 
-import DrDan.AnimalsBreed.registry.AnimalsBreedRegistry
-import DrDan.AnimalsBreed.registry.AnimalsBreedRegistrySystem
-import DrDan.AnimalsBreed.command.AnimalsBreedCommand
-import DrDan.AnimalsBreed.config.AnimalsBreedConfig
 import DrDan.AnimalsBreed.event.AnimalsBreedEvent
-import DrDan.AnimalsBreed.breed_ecs.AnimalsBreedComponent
+import DrDan.AnimalsBreed.config.AnimalsBreedConfig
+import DrDan.AnimalsBreed.command.AnimalsBreedCommand
 import DrDan.AnimalsBreed.breed_ecs.AnimalsBreedSystem
+import DrDan.AnimalsBreed.registry.AnimalsBreedRegistry
+import DrDan.AnimalsBreed.breed_ecs.AnimalsBreedComponent
 import DrDan.AnimalsBreed.resource_creator.ResourceCreator
-// import DrDan.AnimalsBreed.interaction.ExampleInteraction
+import DrDan.AnimalsBreed.registry.AnimalsBreedRegistrySystem
+import DrDan.AnimalsBreed.actions.ActionTame
 
 private const val PLUGIN_NAME = "AnimalsBreed"
 
@@ -151,5 +152,8 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
         
         // Register commands
         commandRegistry.registerCommand(AnimalsBreedCommand())
+
+        // Register interactions
+        NPCPlugin.get().registerCoreComponentType("Breed", BuilderActionBreed::new)
     }
 }
