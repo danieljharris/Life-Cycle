@@ -36,8 +36,7 @@ class AnimalsGrowSystem : EntityTickingSystem<EntityStore>() {
         index: Int,
         archetypeChunk: ArchetypeChunk<EntityStore>,
         store: Store<EntityStore>,
-        commandBuffer: CommandBuffer<EntityStore>
-    ) {
+        commandBuffer: CommandBuffer<EntityStore>) {
         val animalsGrow = archetypeChunk.getComponent(index, AnimalsGrow.getComponentType()) ?: return
         val ref = archetypeChunk.getReferenceTo(index)
         
@@ -46,19 +45,9 @@ class AnimalsGrowSystem : EntityTickingSystem<EntityStore>() {
         val currentGameTime = worldTimeResource.gameTime
         
         // Check if animal should grow based on in-game time elapsed
-        if (animalsGrow.shouldGrow(currentGameTime)) {
-            AnimalsGrowAction.grow(ref, store, commandBuffer)
-            // println("AnimalsGrowSystem: Animal has grown up! (In-game time based)")
-        } else {
-            // Throttled progress logging
-            // tickCount++
-            // if (tickCount >= logInterval) {
-            //     tickCount = 0
-            //     val progress = animalsGrow.getGrowthProgress(currentGameTime)
-            //     val remaining = animalsGrow.getRemainingSeconds(currentGameTime)
-            //     println("AnimalsGrowSystem: Growth progress: ${(progress * 100).toInt()}%, ${remaining}s remaining (in-game time)")
-            // }
-        }
+        if (!animalsGrow.shouldGrow(currentGameTime)) return
+        
+        AnimalsGrowAction.grow(ref, store, commandBuffer)
     }
 
     override fun getGroup(): SystemGroup<EntityStore>? = DamageModule.get().gatherDamageGroup

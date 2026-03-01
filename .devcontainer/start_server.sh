@@ -1,13 +1,29 @@
 #!/bin/bash
+# Hytale Server Launcher
+# This script handles staged updates and starts the server with default arguments.
+#
+# CUSTOM JVM ARGUMENTS
+# --------------------
+# To customize JVM arguments (e.g., memory settings), create a file named
+# "jvm.options" in the same directory as this script. One argument per line.
+# Lines starting with # are comments.
+#
+# Example jvm.options:
+#   -Xms2G
+#   -Xmx4G
+#   -XX:+UseG1GC
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+WORKING_DIR="/workspace/hytale-downloader"
+cd "$WORKING_DIR"
 
 # Configuration
 CLIENT_ID="hytale-server"
 SCOPES="openid offline auth:server"
-SERVER_DIR="/workspace/server"
+SERVER_DIR="/workspace/hytale-downloader/Server"
 AUTH_FILE="$SERVER_DIR/hytale_auth_data.json"
-SERVER_JAR="$SERVER_DIR/HytaleServer.jar"
-ASSETS_ZIP="$SERVER_DIR/Assets.zip"
-SERVER_ARGS="--assets $ASSETS_ZIP --bind 0.0.0.0:5520 --allow-op"
+ASSETS_ZIP="/workspace/hytale-downloader/Assets.zip"
 
 URL_DEVICE_AUTH="https://oauth.accounts.hytale.com/oauth2/device/auth"
 URL_TOKEN="https://oauth.accounts.hytale.com/oauth2/token"
@@ -144,50 +160,104 @@ if [ "$SESSION_TOKEN" == "null" ]; then
     error_exit "Failed to create game session. Response: $SESSION_RES"
 fi
 
-cd "/workspace/server"
+while true; do
+    APPLIED_UPDATE=false
 
-# Create a named pipe for command input if it doesn't exist
-COMMAND_PIPE="/tmp/hytale_commands.fifo"
-if [ ! -p "$COMMAND_PIPE" ]; then
-    mkfifo "$COMMAND_PIPE"
-fi
-
-# Store the server PID
-echo $$ > /tmp/hytale_server.pid
-
-# Cleanup function for Ctrl+C
-cleanup_server() {
-    echo ""
-    echo "Shutting down server..."
-    if [ -n "$TAIL_PID" ] && kill -0 "$TAIL_PID" 2>/dev/null; then
-        kill "$TAIL_PID" 2>/dev/null
+    # Apply staged update if present
+    if [ -f "updater/staging/Server/HytaleServer.jar" ]; then
+        echo "[Launcher] Applying staged update..."
+        # Only replace update files, preserve config/saves/mods
+        cp -f updater/staging/Server/HytaleServer.jar Server/
+        [ -d "updater/staging/Server/Licenses" ] && rm -rf Server/Licenses && cp -r updater/staging/Server/Licenses Server/
+        [ -f "updater/staging/Assets.zip" ] && cp -f updater/staging/Assets.zip ./
+        [ -f "updater/staging/start.sh" ] && cp -f updater/staging/start.sh ./
+        [ -f "updater/staging/start.bat" ] && cp -f updater/staging/start.bat ./
+        rm -rf updater/staging
+        APPLIED_UPDATE=true
     fi
-    if [ -n "$JAVA_PID" ] && kill -0 "$JAVA_PID" 2>/dev/null; then
-        kill "$JAVA_PID" 2>/dev/null
-        wait "$JAVA_PID" 2>/dev/null
+
+    # Run server from inside Server/ folder so config/backups/etc. are generated there
+    cd Server
+
+    # Load custom JVM arguments from jvm.options if it exists (uses JVM's @-file syntax)
+    JVM_OPTS=""
+    [ -f "../jvm.options" ] && JVM_OPTS="@../jvm.options"
+
+    # Default server arguments
+    # --assets: Assets.zip is in parent directory
+    # --backup: Enable periodic backups like singleplayer
+    DEFAULT_ARGS="--assets ../Assets.zip --backup --backup-dir backups --backup-frequency 30 --session-token $SESSION_TOKEN --identity-token $IDENTITY_TOKEN --bind 0.0.0.0:5520 --allow-op"
+
+    # Create a named pipe for command input if it doesn't exist
+    COMMAND_PIPE="/tmp/hytale_commands.fifo"
+    if [ ! -p "$COMMAND_PIPE" ]; then
+        mkfifo "$COMMAND_PIPE"
     fi
+
+    # Store the server PID
+    echo $$ > /tmp/hytale_server.pid
+
+    # Cleanup function for Ctrl+C
+    cleanup_server() {
+        echo ""
+        echo "Shutting down server..."
+        if [ -n "$TAIL_PID" ] && kill -0 "$TAIL_PID" 2>/dev/null; then
+            kill "$TAIL_PID" 2>/dev/null
+        fi
+        if [ -n "$JAVA_PID" ] && kill -0 "$JAVA_PID" 2>/dev/null; then
+            kill "$JAVA_PID" 2>/dev/null
+            wait "$JAVA_PID" 2>/dev/null
+        fi
+        rm -f "$COMMAND_PIPE" /tmp/hytale_server.pid /tmp/hytale_java.pid
+        exit 0
+    }
+
+    trap cleanup_server SIGINT SIGTERM
+
+    echo "--- Starting Hytale Server ---"
+    # Start server and track time
+    START_TIME=$(date +%s)
+    # Run tail in background and capture its PID
+    tail -f "$COMMAND_PIPE" | java $JVM_OPTS -jar HytaleServer.jar $DEFAULT_ARGS "$@" &
+    
+    # Store the java process PID
+    JAVA_PID=$!
+    echo $JAVA_PID > /tmp/hytale_java.pid
+
+    # Find the tail process PID (parent of java in the pipeline)
+    TAIL_PID=$(ps -o pid= --ppid $$ | grep -v $JAVA_PID | head -n1 | xargs)
+
+    # Wait for the Java process
+    wait $JAVA_PID
+    EXIT_CODE=$?
+    ELAPSED=$(( $(date +%s) - START_TIME ))
+
+    # Cleanup
     rm -f "$COMMAND_PIPE" /tmp/hytale_server.pid /tmp/hytale_java.pid
-    exit 0
-}
 
-trap cleanup_server SIGINT SIGTERM
+    # Return to script dir for next iteration
+    cd "$WORKING_DIR"
 
-echo "--- Starting Hytale Server ---"
-# Run tail in background and capture its PID
-tail -f "$COMMAND_PIPE" | java -jar "$SERVER_JAR" \
-    --session-token "$SESSION_TOKEN" \
-    --identity-token "$IDENTITY_TOKEN" \
-    $SERVER_ARGS &
+    # Exit code 8 = restart for update
+    if [ $EXIT_CODE -eq 8 ]; then
+        echo "[Launcher] Restarting to apply update..."
+        continue
+    fi
 
-# Store the java process PID
-JAVA_PID=$!
-echo $JAVA_PID > /tmp/hytale_java.pid
+    # Warn on crash shortly after update
+    if [ $EXIT_CODE -ne 0 ] && [ "$APPLIED_UPDATE" = true ] && [ $ELAPSED -lt 30 ]; then
+        echo ""
+        echo "[Launcher] ERROR: Server exited with code $EXIT_CODE within ${ELAPSED}s of starting."
+        echo "[Launcher] This may indicate the update failed to start correctly."
+        echo "[Launcher]"
+        echo "[Launcher] Your previous files are in the updater/backup/ folder."
+        echo "[Launcher] To rollback: delete Server/ and Assets.zip, then move from updater/backup/"
+        echo ""
+        # Only prompt if running interactively (has terminal)
+        if [ -t 0 ]; then
+            read -p "Press Enter to exit..."
+        fi
+    fi
 
-# Find the tail process PID (parent of java in the pipeline)
-TAIL_PID=$(ps -o pid= --ppid $$ | grep -v $JAVA_PID | head -n1 | xargs)
-
-# Wait for the Java process
-wait $JAVA_PID
-
-# Cleanup
-rm -f "$COMMAND_PIPE" /tmp/hytale_server.pid /tmp/hytale_java.pid
+    exit $EXIT_CODE
+done

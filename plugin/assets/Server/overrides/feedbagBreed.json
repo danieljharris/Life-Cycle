@@ -1,0 +1,116 @@
+{
+    "Instructions": [
+        {
+            "Instructions": [
+                {
+                    "$Comment": "Interaction state - look at player while interacting",
+                    "Sensor": {
+                        "Type": "State",
+                        "State": "$Interaction"
+                    },
+                    "Instructions": [
+                        {
+                            "Continue": true,
+                            "Sensor": {
+                                "Type": "Target",
+                                "Range": 10
+                            },
+                            "HeadMotion": {
+                                "Type": "Watch"
+                            }
+                        },
+                        {
+                            "$Comment": "Return to Watching after interaction ends",
+                            "Sensor": {
+                                "Type": "Any"
+                            },
+                            "Actions": [
+                                {
+                                    "Type": "Timeout",
+                                    "Delay": [ 1, 1 ],
+                                    "Action": {
+                                        "Type": "Sequence",
+                                        "Actions": [
+                                            {
+                                                "Type": "ReleaseTarget"
+                                            },
+                                            {
+                                                "Type": "State",
+                                                "State": "Idle"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+  "InteractionInstruction": {
+        "Instructions": [
+            {
+                "Sensor": {
+                    "Type": "Not",
+                    "Sensor": {
+                        "Type": "CanInteract",
+                        "ViewSector": 180
+                    }
+                },
+                "Actions": [
+                    {
+                        "Type": "SetInteractable",
+                        "Interactable": false
+                    }
+                ]
+            },
+            {
+                "Continue": true,
+                "Sensor": {
+                    "Type": "Breedable",
+                    "IsBreedable": false
+                },
+                "Actions": [
+                    {
+                        "Type": "SetInteractable",
+                        "Interactable": true,
+                        "Hint": "server.interactionHints.breed"
+                    }
+                ]
+            },
+            {
+                "Sensor": {
+                    "Type": "HasInteracted"
+                },
+                "Instructions": [
+                    {
+                        "Sensor": {
+                            "Type": "Not",
+                            "Sensor": {
+                                "Type": "State",
+                                "State": "$Interaction"
+                            }
+                        },
+                        "Actions": [
+                            {
+                                "Type": "LockOnInteractionTarget"
+                            },
+                            {
+                                "Type": "Breed"
+                            },
+                            {
+                                "Type": "SetInteractable",
+                                "Interactable": false
+                            },
+                            {
+                                "Type": "State",
+                                "State": "$Interaction"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

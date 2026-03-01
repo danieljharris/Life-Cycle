@@ -134,7 +134,7 @@ class BabyGrowTest : TestCase("BabyGrowTest") {
     override fun run(world: World, store: Store<EntityStore>) {
         start()
         val testNPCName = "Test_BabyGrowTest"
-        val spawnPos = Vector3d(0.0, 115.0, 0.0)
+        val spawnPos = Vector3d(0.9, 115.0, 0.0)
         spawn(world, store, spawnPos, testNPCName)
 
         println("[AG_TEST:COMMAND:time midday]")
@@ -211,7 +211,7 @@ class KeepHealthOnGrowTest : TestCase("KeepHealthOnGrowTest") {
     override fun run(world: World, store: Store<EntityStore>) {
         start()
         val testNPCName = "Test_KeepHealthOnGrowTest"
-        val spawnPos = Vector3d(0.0, 115.0, 0.0)
+        val spawnPos = Vector3d(0.9, 115.0, 0.9)
         val ref = spawn(world, store, spawnPos, testNPCName)
 
         val healthBeforeGrow = arrayOf(1.0f)

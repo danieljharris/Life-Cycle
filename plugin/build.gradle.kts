@@ -4,7 +4,7 @@
 // ============================================================
 
 plugins {
-    kotlin("jvm") version "2.1.0"
+    kotlin("jvm") version "2.3.0"
 }
 
 // Match Bazel's Java version
@@ -34,6 +34,8 @@ dependencies {
     
     // JSON (from maven_deps.json)
     implementation("com.google.code.gson:gson:2.13.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
+    implementation("io.github.evgenius1424:kotlin-json-merge-patch:1.0.0")
     
     // Caching
     implementation("com.github.ben-manes.caffeine:caffeine:3.2.2")
@@ -54,8 +56,8 @@ dependencies {
     implementation("org.mapstruct:mapstruct:1.6.3")
     annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
     
-    // Hytale Server API - load from local JAR if available
-    compileOnly(files(rootProject.file(".local-assets/HytaleServer.jar")))
+    // Hytale Server API - load from downloaded server JAR (setup script places it under hytale-downloader/Server)
+    compileOnly(files(rootProject.file("hytale-downloader/Server/HytaleServer.jar")))
 }
 
 // Task to download sources for dependencies (enables Ctrl+Click)

@@ -83,3 +83,9 @@ user.bazelrc
 /server/
 
 hytale_auth_data.json
+
+# Ignore the downloader and its downloads
+/hytale-downloader/
+# Downloader archives
+/hytale-downloader.zip
+/hytale-downloader/*.zip

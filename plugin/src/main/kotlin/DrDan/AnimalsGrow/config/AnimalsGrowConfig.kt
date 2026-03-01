@@ -18,23 +18,23 @@ class AnimalsGrowConfig {
 
     constructor() {
         // 86400 = 1 in-game day (24 real minutes)
-        growsUpInto.add(GrowthEntry("Sheep_Lamb"          , "Sheep"         , 86400))
-        growsUpInto.add(GrowthEntry("Pig_Piglet"          , "Pig"           , 86400))
-        growsUpInto.add(GrowthEntry("Bison_Calf"          , "Bison"         , 86400))
-        growsUpInto.add(GrowthEntry("Boar_Piglet"         , "Boar"          , 86400))
-        growsUpInto.add(GrowthEntry("Camel_Calf"          , "Camel"         , 86400))
-        growsUpInto.add(GrowthEntry("Chicken_Desert_Chick", "Chicken_Desert", 86400))
-        growsUpInto.add(GrowthEntry("Chicken_Chick"       , "Chicken"       , 86400))
-        growsUpInto.add(GrowthEntry("Cow_Calf"            , "Cow"           , 86400))
-        growsUpInto.add(GrowthEntry("Goat_Kid"            , "Goat"          , 86400))
-        growsUpInto.add(GrowthEntry("Horse_Foal"          , "Horse"         , 86400))
-        growsUpInto.add(GrowthEntry("Mouflon_Lamb"        , "Mouflon"       , 86400))
-        growsUpInto.add(GrowthEntry("Pig_Wild_Piglet"     , "Pig_Wild"      , 86400))
-        growsUpInto.add(GrowthEntry("Bunny"               , "Rabbit"        , 86400))
-        growsUpInto.add(GrowthEntry("Ram_Lamb"            , "Ram"           , 86400))
-        growsUpInto.add(GrowthEntry("Skrill_Chick"        , "Skrill"        , 86400))
-        growsUpInto.add(GrowthEntry("Turkey_Chick"        , "Turkey"        , 86400))
-        growsUpInto.add(GrowthEntry("Warthog_Piglet"      , "Warthog"       , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Sheep_Lamb"          , "Tamed_Sheep"         , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Pig_Piglet"          , "Tamed_Pig"           , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Bison_Calf"          , "Tamed_Bison"         , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Boar_Piglet"         , "Tamed_Boar"          , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Camel_Calf"          , "Tamed_Camel"         , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Chicken_Desert_Chick", "Tamed_Chicken_Desert", 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Chicken_Chick"       , "Tamed_Chicken"       , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Cow_Calf"            , "Tamed_Cow"           , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Goat_Kid"            , "Tamed_Goat"          , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Horse_Foal"          , "Tamed_Horse"         , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Mouflon_Lamb"        , "Tamed_Mouflon"       , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Pig_Wild_Piglet"     , "Tamed_Pig_Wild"      , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Bunny"               , "Tamed_Rabbit"        , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Ram_Lamb"            , "Tamed_Ram"           , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Skrill_Chick"        , "Tamed_Skrill"        , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Turkey_Chick"        , "Tamed_Turkey"        , 86400))
+        growsUpInto.add(GrowthEntry("Tamed_Warthog_Piglet"      , "Tamed_Warthog"       , 86400))
     }
 
     private class ListCodec : Codec<MutableList<GrowthEntry>> {
@@ -63,11 +63,13 @@ class AnimalsGrowConfig {
     companion object {
         @JvmStatic
         val CODEC = BuilderCodec.builder(AnimalsGrowConfig::class.java, ::AnimalsGrowConfig)
+            .versioned()
+            .codecVersion(2)
             .append(
                 KeyedCodec("GrowsUpInto", ListCodec()),
                 { config, value -> config.growsUpInto = value },
                 { it.growsUpInto }
-            ).add()
+            ).setVersionRange(2, 2).add()
             .build()!!
     }
 }
