@@ -8,6 +8,7 @@ import com.hypixel.hytale.server.npc.asset.builder.holder.StringArrayHolder
 import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderActionBase
 
 import com.google.gson.JsonElement
+import DrDan.AnimalsBreed.actions.ActionBreed
 
 class BuilderActionBreed : BuilderActionBase() {
     protected val breedItems: StringArrayHolder = StringArrayHolder()
@@ -17,7 +18,7 @@ class BuilderActionBreed : BuilderActionBase() {
     override fun build(builderSupport: BuilderSupport): Action { return ActionBreed(this, builderSupport) }
     override fun getBuilderDescriptorState(): BuilderDescriptorState { return BuilderDescriptorState.Stable }
     
-    fun getBreedItems(support: BuilderSupport): Array<String> { return this.breedItems.get(support.getExecutionContext()) }
+    fun getBreedItems(support: BuilderSupport): Array<String> { return this.breedItems.get(support.getExecutionContext()) ?: emptyArray() }
 
     override fun readConfig(data: JsonElement): Builder<Action> {
         this.requireStringArray(

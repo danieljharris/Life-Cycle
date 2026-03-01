@@ -10,7 +10,8 @@ import com.hypixel.hytale.server.npc.role.Role
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider
 
 import DrDan.AnimalsBreed.builders.BuilderSensorBred
-import DrDan.AnimalsBreed.components.BreedComponent
+import DrDan.AnimalsBreed.breed_ecs.AnimalsBreedComponent
+import DrDan.AnimalsBreed.AnimalsBreed
 
 class SensorBred(builder: BuilderSensorBred, support: BuilderSupport) : SensorBase(builder) {
 
@@ -23,7 +24,7 @@ class SensorBred(builder: BuilderSensorBred, support: BuilderSupport) : SensorBa
     override fun getSensorInfo(): InfoProvider? = null
 
     override fun matches(ref: Ref<EntityStore>, role: Role, dt: Double, store: Store<EntityStore>): Boolean {
-        val breedComponent = store.getComponent(ref, BreedComponent.getComponentType())
+        val breedComponent = store.getComponent(ref, AnimalsBreed.getComponentType()) as? AnimalsBreedComponent
         if (breedComponent == null) {
             LOGGER.atSevere().log("Sensor Bred failed to get Breed Component")
             return false
@@ -31,6 +32,6 @@ class SensorBred(builder: BuilderSensorBred, support: BuilderSupport) : SensorBa
             LOGGER.atInfo().log("Sensor Bred successfully got Breed Component")
         }
 
-        return super.matches(ref, role, dt, store) && (breedComponent.isBreed() == this.isBred)
+        return super.matches(ref, role, dt, store) && (breedComponent.getIsRecentlyBred() == this.isBred)
     }
 }

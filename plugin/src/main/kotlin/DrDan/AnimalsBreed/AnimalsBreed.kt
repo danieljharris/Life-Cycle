@@ -33,7 +33,7 @@ import DrDan.AnimalsBreed.registry.AnimalsBreedRegistry
 import DrDan.AnimalsBreed.breed_ecs.AnimalsBreedComponent
 import DrDan.AnimalsBreed.resource_creator.ResourceCreator
 import DrDan.AnimalsBreed.registry.AnimalsBreedRegistrySystem
-import DrDan.AnimalsBreed.actions.ActionTame
+import DrDan.AnimalsBreed.builders.BuilderActionBreed
 
 private const val PLUGIN_NAME = "AnimalsBreed"
 
@@ -65,77 +65,63 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
         // rc.extractAsset(jsonFileToGet)
         // rc.mergePatch(jsonFileToGet, """{"Modify":{"AttractiveItemSet":["Ingredient_Fibre"]}}""")
         val tamedNPCs = rc.listFilesInZipPath("Server/NPC/Roles/Creature/Livestock/Tamed")
-        
+
+        // for (npcPath in tamedNPCs) {
+        //     // logger.info("Tamed NPC JSON found in ZIP: $npcPath")
+        //     rc.mergePatchArrayRemove(npcPath, """{"Modify":{"AttractiveItemSet":["Tool_Feedbag"]}}""")
+        // }
+
+        // Override C:\Users\YouMi\Downloads\New folder\Assets\Server\Item\Items\Tool\Feedbag\Tool_Feedbag.json
+        // Override with: /workspace/plugin/src/main/kotlin/DrDan/overrides
+        // rc.extractAsset(Paths.get("Server/Item/Items/Tool/Feedbag/Tool_Feedbag.json"), Paths.get("overrides/feedbagBreed.json"))
+
+        // Print contents of the folder structure inside getDataDirectory()
+        // Navigate up one directory from the plugin data directory (safe fallback if parent is null)
+        val dataDir = getDataDirectory().toAbsolutePath().parent ?: getDataDirectory()
+        logger.info("getDataDirectory path: $dataDir")
+        logger.info("Data directory contents:")
+        var lifecycleJar: Path? = null
+        try {
+            Files.walk(dataDir).use { paths ->
+                paths.filter { Files.isRegularFile(it) }.forEach { path ->
+                    // logger.info("- ${dataDir.relativize(path)}")
+                    if (lifecycleJar == null && path.fileName.toString().matches(Regex("LifeCycle-.*\\.jar"))) {
+                        lifecycleJar = path
+                    }
+                }
+            }
+            if (lifecycleJar != null) {
+                logger.info("Found LifeCycle jar: $lifecycleJar")
+            } else {
+                logger.info("No LifeCycle-*.jar found under $dataDir")
+            }
+        } catch (e: Exception) {
+            logger.error("Failed to list data directory contents", e)
+        }
+
+        if (lifecycleJar == null) {
+            logger.info("No LifeCycle-*.jar found; skipping Tool_Feedbag extraction.")
+            return
+        }
+
+        val myToolbag = rc.extractAsset(Paths.get("Server/overrides/feedbagBreed.json"), lifecycleJar) ?: return
+
+        // rc.mergePatch(Paths.get("Server/Item/Items/Tool/Feedbag/Tool_Feedbag.json"), myToolbag)
+
+        logger.info("Extracted modified Tool_Feedbag.json content:\n$myToolbag")
+
         for (npcPath in tamedNPCs) {
             // logger.info("Tamed NPC JSON found in ZIP: $npcPath")
-            rc.mergePatchArrayMove(npcPath, """{"Modify":{"AttractiveItemSet":["Tool_Feedbag"]}}""")
+            rc.mergePatchArrayRemove(npcPath, """{"Modify":{"AttractiveItemSet":["Tool_Feedbag"]}}""")
+            rc.mergePatch(npcPath, myToolbag)
         }
 
 
-        // val assetPacks: List<AssetPack> = AssetModule.get().getAssetPacks()
-
-        // logger.info("Asset found at 1 ${assetPacks[2].getRoot()}")
-
-        // val rc = ResourceCreator()
-        // rc.mergePatch(Path.of("Server/NPC/Roles/Creature/Livestock/Tamed/Tamed_Bison.json"), "")
-
-        // TODO: See if this can be moved to start()
-        // this.getCodecRegistry(Interaction.CODEC).register("Example", ExampleInteraction::class.java, ExampleInteraction.CODEC)
-        // NPCPlugin.get().registerCoreComponentType("Breed", com.hypixel.hytale.builtin.adventure.npcshop.npc.builders.BuilderActionOpenShop::new)
     }
 
     override fun start() { start(entityStoreRegistry, commandRegistry) }
     fun start(entityStoreRegistry: ComponentRegistryProxy<EntityStore>, commandRegistry: CommandRegistry) {
         logger.info("Starting $PLUGIN_NAME!")
-
-        // val zipFs = FileSystems.newFileSystem(assetPath, emptyMap<String, Any>())
-        // try {
-        //     val target: Path = zipFs.getPath(jsonFileToGet.toString())
-        //     if (Files.exists(target)) {
-        //         try {
-        //             val bytes = Files.readAllBytes(target)
-        //             val content = String(bytes)
-        //             logger.info("Contents of $jsonFileToGet:\n$content")
-        //         } catch (e: Exception) {
-        //             logger.warn("Failed reading $jsonFileToGet from ZIP", e)
-        //         }
-        //     } else {
-        //         logger.warn("JSON file not found in asset ZIP: $jsonFileToGet")
-        //     }
-        // } finally {
-        //     zipFs.close()
-        // }
-
-
-        // logger.info("Asset found 1: getName = ${assetPacks[1].getName()}")
-        // logger.info("Asset found 1: getPackLocation = ${assetPacks[1].getPackLocation()}")
-        // logger.info("Asset found 1: getRoot = ${assetPacks[1].getRoot()}")
-
-        // this.getEventRegistry().register(128.toShort(), LoadAssetEvent::class.java) { event ->
-        //     this.getLogger().at(Level.INFO).log("Loading Hytalor Patch assets phase...")
-        //     val start = System.nanoTime()
-        //     val assetPacks: List<AssetPack> = AssetModule.get().getAssetPacks()
-
-        //     for (assetPack in assetPacks) {
-        //         try {
-        //             val pmClass = Class.forName("com.hypixel.hytale.server.core.asset.PatchManager")
-        //             val getMethod = pmClass.getMethod("get")
-        //             val pm = getMethod.invoke(null)
-        //             val loadMethod = pmClass.getMethod("loadPatchAssets", assetPack.javaClass)
-        //             loadMethod.invoke(pm, assetPack)
-        //         } catch (e: Exception) {
-        //             logger.warn("Failed to load patch assets reflectively", e)
-        //         }
-        //     }
-
-        //     this.getLogger()
-        //         .at(Level.INFO)
-        //         .log(
-        //             "Loading Hytalor Patch assets phase completed! Boot time %s, Took %s",
-        //             FormatUtil.nanosToString(System.nanoTime() - event.getBootStart()),
-        //             FormatUtil.nanosToString(System.nanoTime() - start)
-        //         )
-        // }
         
         val fullConfig = config.get()
         AnimalsBreedAction.initialize(fullConfig)
@@ -153,7 +139,11 @@ class AnimalsBreed(init: JavaPluginInit) : JavaPlugin(init) {
         // Register commands
         commandRegistry.registerCommand(AnimalsBreedCommand())
 
-        // Register interactions
-        NPCPlugin.get().registerCoreComponentType("Breed", BuilderActionBreed::new)
+        // Register interactions (commented out for now — needs proper functional ref)
+        try {
+            NPCPlugin.get().registerCoreComponentType("Breed", java.util.function.Supplier { BuilderActionBreed() })
+        } catch (e: Exception) {
+            logger.info("Breed action already registered (Maybe plugin reloaded?)")
+        }
     }
 }

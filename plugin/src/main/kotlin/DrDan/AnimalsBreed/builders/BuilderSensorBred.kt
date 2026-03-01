@@ -7,32 +7,32 @@ import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport
 import com.hypixel.hytale.server.npc.asset.builder.holder.BooleanHolder
 import com.hypixel.hytale.server.npc.corecomponents.builders.BuilderSensorBase
 import com.hypixel.hytale.server.npc.instructions.Sensor
-import com.willowaway.mobexampleproject.sensors.SensorTamed
+import DrDan.AnimalsBreed.sensors.SensorBred
 
-class BuilderSensorTamed : BuilderSensorBase() {
+class BuilderSensorBred : BuilderSensorBase() {
 
-    protected val isTamed: BooleanHolder = BooleanHolder()
+    protected val isBred: BooleanHolder = BooleanHolder()
 
-    fun getIsTamed(builderSupport: BuilderSupport): Boolean {
-        return this.isTamed.get(builderSupport.getExecutionContext())
+    fun getIsBred(builderSupport: BuilderSupport): Boolean {
+        return this.isBred.get(builderSupport.getExecutionContext())
     }
 
-    override fun getShortDescription(): String = "Checks whether or not the NPC is tame"
+    override fun getShortDescription(): String = "Checks whether or not the NPC is bred"
 
     override fun getLongDescription(): String = getShortDescription()
 
-    override fun build(builderSupport: BuilderSupport): Sensor = SensorTamed(this, builderSupport)
+    override fun build(builderSupport: BuilderSupport): Sensor = SensorBred(this, builderSupport)
 
     override fun getBuilderDescriptorState(): BuilderDescriptorState = BuilderDescriptorState.Stable
 
     override fun readConfig(data: JsonElement): Builder<Sensor> {
         this.getBoolean(
             data,
-            "IsTamed",
-            this.isTamed,
+            "IsBred",
+            this.isBred,
             false,
             BuilderDescriptorState.Stable,
-            "If NPC is tame or not",
+            "If NPC is bred or not",
             ""
         )
         return this

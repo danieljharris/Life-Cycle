@@ -80,7 +80,7 @@ class ResourceCreator(private val assetZipPath: Path) {
     // base = {"Modify":{"AttractiveItemSet":["Ingredient_Fiber", "Plant_Cabbage"]}} + patch = {"Modify":{"AttractiveItemSet":["Ingredient_Fiber"]}} = {"Modify":{"AttractiveItemSet":["Plant_Cabbage"]}}
     // Needs to first get the existing array, remove the value, then save the modified array back to the JSON
     // The patch contains the value to remove and the path to get to the existing array
-    fun mergePatchArrayMove(jsonFileToGet: Path, patch: String) {
+    fun mergePatchArrayRemove(jsonFileToGet: Path, patch: String) {
         // println("Base Path: $assetZipPath")
         val baseFile = extractAsset(jsonFileToGet)
         if (baseFile.isBlank()) {
@@ -153,17 +153,44 @@ class ResourceCreator(private val assetZipPath: Path) {
         println("Registered asset pack from $path")
     }
 
-    fun extractAsset(jsonFileToGet: Path): String {
-        val zipFs = FileSystems.newFileSystem(assetZipPath, emptyMap<String, Any>())
-        var content: String = ""
+    fun extractAsset(jsonFileToGet: Path, zipPath: Path = assetZipPath): String {
+        var content = ""
+
+        // If the asset path is a directory on disk, read directly from the filesystem
+        if (Files.exists(zipPath) && Files.isDirectory(zipPath)) {
+            val target = zipPath.resolve(jsonFileToGet.toString())
+            if (Files.exists(target)) {
+                try {
+                    content = Files.readString(target)
+                } catch (e: Exception) {
+                    println("Failed reading $jsonFileToGet from directory $zipPath: ${e.message}")
+                }
+            } else {
+                println("JSON file not found in directory: $target")
+            }
+            return content
+        }
+
+        var zipFs: FileSystem? = null
         try {
+            // Try opening as a JAR/ZIP using a jar: URI first (works reliably on many JVMs)
+            try {
+                val jarUri = java.net.URI.create("jar:${zipPath.toUri()}")
+                zipFs = FileSystems.newFileSystem(jarUri, emptyMap<String, Any>())
+            } catch (e: java.nio.file.ProviderNotFoundException) {
+                // Fallback: try opening via Path-based overload
+                zipFs = try {
+                    FileSystems.newFileSystem(zipPath, emptyMap<String, Any>())
+                } catch (inner: Exception) {
+                    throw inner
+                }
+            }
+
             val target: Path = zipFs.getPath(jsonFileToGet.toString())
             if (Files.exists(target)) {
                 try {
                     val bytes = Files.readAllBytes(target)
-                    content = String(bytes)
-                    // println("Contents of $jsonFileToGet:\n")
-                    // println(content)
+                    content = String(bytes, Charsets.UTF_8)
                 } catch (e: Exception) {
                     println("Failed reading $jsonFileToGet from ZIP: ${e.message}")
                 }
@@ -171,13 +198,16 @@ class ResourceCreator(private val assetZipPath: Path) {
                 println("JSON file not found in asset ZIP: $jsonFileToGet")
             }
         } finally {
-            zipFs.close()
+            try {
+                zipFs?.close()
+            } catch (_: Exception) {
+            }
         }
 
         return content
     }
 
-    fun listFilesInZipPath(dirPath: String = "Server/NPC/Roles/Creature/Livestock/Tamed"): Vector<Path> {
+    fun listFilesInZipPath(dirPath: String): Vector<Path> {
         val zipFs = FileSystems.newFileSystem(assetZipPath, emptyMap<String, Any>())
         val result = Vector<Path>()
         try {
